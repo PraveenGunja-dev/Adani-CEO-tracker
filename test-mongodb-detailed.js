@@ -13,6 +13,8 @@ async function testConnection() {
   let client;
   
   try {
+    console.log('Attempting to connect to MongoDB...');
+    
     // Add proper SSL options for MongoDB connections
     client = new MongoClient(MONGODB_URI, {
       tls: true,
@@ -21,15 +23,19 @@ async function testConnection() {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
       // SSL options for MongoDB Atlas
-      tlsAllowInvalidCertificates: false, // Set to false for production
-      tlsAllowInvalidHostnames: false, // Set to false for production
+      tlsAllowInvalidCertificates: false,
+      tlsAllowInvalidHostnames: false,
     });
     
+    console.log('MongoClient created, attempting connection...');
     await client.connect();
     console.log('Connected successfully to MongoDB');
     
     const db = client.db(MONGODB_DB);
+    console.log('Database selected:', MONGODB_DB);
+    
     const stats = await db.command({ ping: 1 });
+    console.log('Ping result:', stats);
     
     if (stats.ok === 1) {
       console.log('MongoDB ping successful');
@@ -42,11 +48,18 @@ async function testConnection() {
     console.log('Collections in database:', collections.map(c => c.name));
     
   } catch (error) {
-    console.error('Error connecting to MongoDB:', error.message);
+    console.error('Error connecting to MongoDB:');
+    console.error('Name:', error.name);
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
   } finally {
     if (client) {
-      await client.close();
-      console.log('Disconnected from MongoDB');
+      try {
+        await client.close();
+        console.log('Disconnected from MongoDB');
+      } catch (closeError) {
+        console.error('Error closing MongoDB connection:', closeError.message);
+      }
     }
   }
 }

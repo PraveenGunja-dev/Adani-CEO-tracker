@@ -8,6 +8,9 @@ import exDataFY24 from './ex.json';
 import exDataFY25 from './ex_fy25.json';
 import exDataFY26 from './ex_fy26.json';
 
+// Import the custom dropdown component
+import CustomDropdown from './CustomDropdown';
+
 // Define the structure for table rows
 interface TableRow {
   id: number;
@@ -236,8 +239,8 @@ export default function UserTable({
     return `PSS - ${pssValue}`;
   };
 
-  // Function to save new dropdown options to API
-  const saveDropdownOption = async (optionType: string, value: string) => {
+  // Function to save all dropdown options to API
+  const saveDropdownOptions = async () => {
     try {
       const response = await fetch('/api/dropdown-options', {
         method: 'POST',
@@ -245,17 +248,51 @@ export default function UserTable({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          type: optionType,
-          value: value
+          groups,
+          ppaMerchants,
+          types,
+          locationCodes,
+          locations,
+          connectivities
         })
       });
       
       if (!response.ok) {
-        console.error('Failed to save dropdown option:', response.status, response.statusText);
+        console.error('Failed to save dropdown options:', response.status, response.statusText);
       }
     } catch (error: any) {
-      console.error('Error saving dropdown option:', error.message || error);
+      console.error('Error saving dropdown options:', error.message || error);
     }
+  };
+
+  // Function to save a single dropdown option and update the API
+  const saveDropdownOption = async (optionType: string, value: string) => {
+    // First update the local state
+    switch (optionType) {
+      case 'groups':
+        setGroups(prev => [...prev, value]);
+        break;
+      case 'ppaMerchants':
+        setPpaMerchants(prev => [...prev, value]);
+        break;
+      case 'types':
+        setTypes(prev => [...prev, value]);
+        break;
+      case 'locationCodes':
+        setLocationCodes(prev => [...prev, value]);
+        break;
+      case 'locations':
+        setLocations(prev => [...prev, value]);
+        break;
+      case 'connectivities':
+        setConnectivities(prev => [...prev, value]);
+        break;
+      default:
+        return;
+    }
+    
+    // Then save all options to the API
+    saveDropdownOptions();
   };
 
   // Save data to localStorage whenever data changes, separated by fiscal year
@@ -537,107 +574,6 @@ export default function UserTable({
     }
   };
 
-  // Enhanced dropdown component with add functionality
-  const EnhancedDropdown = ({ 
-    label, 
-    value, 
-    options, 
-    onChange, 
-    onAddNew, 
-    placeholder, 
-    fieldKey,
-    icon 
-  }: {
-    label: string;
-    value: string;
-    options: string[];
-    onChange: (value: string) => void;
-    onAddNew: (value: string) => void;
-    placeholder: string;
-    fieldKey: string;
-    icon: React.ReactNode;
-  }) => {
-    const handleAddNew = () => {
-      const newValue = newDropdownValue[fieldKey]?.trim();
-      if (newValue && !options.includes(newValue)) {
-        onAddNew(newValue);
-        onChange(newValue);
-        setNewDropdownValue({ ...newDropdownValue, [fieldKey]: '' });
-        setShowAddInput({ ...showAddInput, [fieldKey]: false });
-      }
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        handleAddNew();
-      } else if (e.key === 'Escape') {
-        setShowAddInput({ ...showAddInput, [fieldKey]: false });
-        setNewDropdownValue({ ...newDropdownValue, [fieldKey]: '' });
-      }
-    };
-
-    return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            {icon}
-          </div>
-          <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white appearance-none"
-          >
-            <option value="">{placeholder}</option>
-            {options.map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => setShowAddInput({ ...showAddInput, [fieldKey]: true })}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-            title="Add new option"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-        {showAddInput[fieldKey] && (
-          <div className="mt-2 flex gap-2">
-            <input
-              type="text"
-              value={newDropdownValue[fieldKey] || ''}
-              onChange={(e) => setNewDropdownValue({ ...newDropdownValue, [fieldKey]: e.target.value })}
-              onKeyPress={handleKeyPress}
-              placeholder={`Enter new ${label.toLowerCase()}`}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={handleAddNew}
-              className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddInput({ ...showAddInput, [fieldKey]: false });
-                setNewDropdownValue({ ...newDropdownValue, [fieldKey]: '' });
-              }}
-              className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   // Toggle menu visibility
   const toggleMenu = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -782,59 +718,37 @@ export default function UserTable({
                   </div>
                 </div>
                 
-                <EnhancedDropdown
+                <CustomDropdown
                   label="Group"
-                  value={newRow.group}
                   options={groups}
+                  value={newRow.group}
                   onChange={(value) => handleInputChange('group', value)}
                   onAddNew={(value) => {
-                    setGroups([...groups, value]);
-                    // Optionally save to API
                     saveDropdownOption('groups', value);
                   }}
                   placeholder="Select Group"
-                  fieldKey="group"
-                  icon={
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                    </svg>
-                  }
                 />
                 
-                <EnhancedDropdown
+                <CustomDropdown
                   label="PPA/Merchant"
-                  value={newRow.ppaMerchant}
                   options={ppaMerchants}
+                  value={newRow.ppaMerchant}
                   onChange={(value) => handleInputChange('ppaMerchant', value)}
                   onAddNew={(value) => {
-                    setPpaMerchants([...ppaMerchants, value]);
                     saveDropdownOption('ppaMerchants', value);
                   }}
                   placeholder="Select Option"
-                  fieldKey="ppaMerchant"
-                  icon={
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  }
                 />
                 
-                <EnhancedDropdown
+                <CustomDropdown
                   label="Type"
-                  value={newRow.type}
                   options={types}
+                  value={newRow.type}
                   onChange={(value) => handleInputChange('type', value)}
                   onAddNew={(value) => {
-                    setTypes([...types, value]);
                     saveDropdownOption('types', value);
                   }}
                   placeholder="Select Type"
-                  fieldKey="type"
-                  icon={
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                    </svg>
-                  }
                 />
                 
                 <div>
@@ -900,25 +814,18 @@ export default function UserTable({
                   </div>
                 </div>
                 
-                <EnhancedDropdown
+                <CustomDropdown
                   label="Location"
-                  value={newRow.location}
                   options={locations}
+                  value={newRow.location}
                   onChange={(value) => handleInputChange('location', value)}
                   onAddNew={(value) => {
-                    setLocations([...locations, value]);
                     // Also add to location relationships with a default location code
                     const newRelationship = { location: value, locationCode: value };
-                    setLocationRelationships([...locationRelationships, newRelationship]);
+                    setLocationRelationships(prev => [...prev, newRelationship]);
                     saveDropdownOption('locations', value);
                   }}
                   placeholder="Select Location"
-                  fieldKey="location"
-                  icon={
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                    </svg>
-                  }
                 />
 
                 <div>
@@ -956,22 +863,15 @@ export default function UserTable({
                   </div>
                 </div>
                 
-                <EnhancedDropdown
+                <CustomDropdown
                   label="Connectivity"
-                  value={newRow.connectivity}
                   options={connectivities}
+                  value={newRow.connectivity}
                   onChange={(value) => handleInputChange('connectivity', value)}
                   onAddNew={(value) => {
-                    setConnectivities([...connectivities, value]);
                     saveDropdownOption('connectivities', value);
                   }}
                   placeholder="Select Connectivity"
-                  fieldKey="connectivity"
-                  icon={
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l-1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
-                    </svg>
-                  }
                 />
               </div>
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -1027,46 +927,46 @@ export default function UserTable({
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
                   <div>Group</div>
                   <div className="mt-1">
-                    <select
+                    <CustomDropdown
+                      options={['', ...groups]}
                       value={filters.group}
-                      onChange={(e) => handleFilterChange('group', e.target.value)}
-                      className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
-                    >
-                      <option value="">All</option>
-                      {groups.map(group => (
-                        <option key={group} value={group}>{group}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => handleFilterChange('group', value)}
+                      onAddNew={(value) => {
+                        saveDropdownOption('groups', value);
+                        handleFilterChange('group', value);
+                      }}
+                      placeholder="All"
+                    />
                   </div>
                 </th>
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
                   <div>PPA/Merchant</div>
                   <div className="mt-1">
-                    <select
+                    <CustomDropdown
+                      options={['', ...ppaMerchants]}
                       value={filters.ppaMerchant}
-                      onChange={(e) => handleFilterChange('ppaMerchant', e.target.value)}
-                      className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
-                    >
-                      <option value="">All</option>
-                      {ppaMerchants.map(option => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => handleFilterChange('ppaMerchant', value)}
+                      onAddNew={(value) => {
+                        saveDropdownOption('ppaMerchants', value);
+                        handleFilterChange('ppaMerchant', value);
+                      }}
+                      placeholder="All"
+                    />
                   </div>
                 </th>
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
                   <div>Type</div>
                   <div className="mt-1">
-                    <select
+                    <CustomDropdown
+                      options={['', ...types]}
                       value={filters.type}
-                      onChange={(e) => handleFilterChange('type', e.target.value)}
-                      className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
-                    >
-                      <option value="">All</option>
-                      {types.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => handleFilterChange('type', value)}
+                      onAddNew={(value) => {
+                        saveDropdownOption('types', value);
+                        handleFilterChange('type', value);
+                      }}
+                      placeholder="All"
+                    />
                   </div>
                 </th>
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
@@ -1081,31 +981,34 @@ export default function UserTable({
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
                   <div>Location Code</div>
                   <div className="mt-1">
-                    <select
+                    <CustomDropdown
+                      options={['', ...locationCodes]}
                       value={filters.locationCode}
-                      onChange={(e) => handleFilterChange('locationCode', e.target.value)}
-                      className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
-                    >
-                      <option value="">All</option>
-                      {locationCodes.map(code => (
-                        <option key={code} value={code}>{code}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => handleFilterChange('locationCode', value)}
+                      onAddNew={(value) => {
+                        saveDropdownOption('locationCodes', value);
+                        handleFilterChange('locationCode', value);
+                      }}
+                      placeholder="All"
+                    />
                   </div>
                 </th>
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
                   <div>Location</div>
                   <div className="mt-1">
-                    <select
+                    <CustomDropdown
+                      options={['', ...locations]}
                       value={filters.location}
-                      onChange={(e) => handleFilterChange('location', e.target.value)}
-                      className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
-                    >
-                      <option value="">All</option>
-                      {locations.map(location => (
-                        <option key={location} value={location}>{location}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => handleFilterChange('location', value)}
+                      onAddNew={(value) => {
+                        // Also add to location relationships with a default location code
+                        const newRelationship = { location: value, locationCode: value };
+                        setLocationRelationships(prev => [...prev, newRelationship]);
+                        saveDropdownOption('locations', value);
+                        handleFilterChange('location', value);
+                      }}
+                      placeholder="All"
+                    />
                   </div>
                 </th>
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
@@ -1114,16 +1017,16 @@ export default function UserTable({
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
                   <div>Connectivity</div>
                   <div className="mt-1">
-                    <select
+                    <CustomDropdown
+                      options={['', ...connectivities]}
                       value={filters.connectivity}
-                      onChange={(e) => handleFilterChange('connectivity', e.target.value)}
-                      className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
-                    >
-                      <option value="">All</option>
-                      {connectivities.map(conn => (
-                        <option key={conn} value={conn}>{conn}</option>
-                      ))}
-                    </select>
+                      onChange={(value) => handleFilterChange('connectivity', value)}
+                      onAddNew={(value) => {
+                        saveDropdownOption('connectivities', value);
+                        handleFilterChange('connectivity', value);
+                      }}
+                      placeholder="All"
+                    />
                   </div>
                 </th>
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] py-3.5 pl-3 pr-4 backdrop-blur-sm backdrop-filter sm:pr-6 lg:pr-8">
@@ -1156,40 +1059,40 @@ export default function UserTable({
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-foreground dark:text-white">
-                        <select
+                        <CustomDropdown
+                          options={groups}
                           value={editRow?.group || ''}
-                          onChange={(e) => handleEditInputChange('group', e.target.value)}
-                          className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-sm"
-                        >
-                          <option value="">Select Group</option>
-                          {groups.map(group => (
-                            <option key={group} value={group}>{group}</option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleEditInputChange('group', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('groups', value);
+                            handleEditInputChange('group', value);
+                          }}
+                          placeholder="Select Group"
+                        />
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-foreground dark:text-white">
-                        <select
+                        <CustomDropdown
+                          options={ppaMerchants}
                           value={editRow?.ppaMerchant || ''}
-                          onChange={(e) => handleEditInputChange('ppaMerchant', e.target.value)}
-                          className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-sm"
-                        >
-                          <option value="">Select Option</option>
-                          {ppaMerchants.map(option => (
-                            <option key={option} value={option}>{option}</option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleEditInputChange('ppaMerchant', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('ppaMerchants', value);
+                            handleEditInputChange('ppaMerchant', value);
+                          }}
+                          placeholder="Select Option"
+                        />
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-foreground dark:text-white">
-                        <select
+                        <CustomDropdown
+                          options={types}
                           value={editRow?.type || ''}
-                          onChange={(e) => handleEditInputChange('type', e.target.value)}
-                          className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-sm"
-                        >
-                          <option value="">Select Type</option>
-                          {types.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleEditInputChange('type', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('types', value);
+                            handleEditInputChange('type', value);
+                          }}
+                          placeholder="Select Type"
+                        />
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-foreground dark:text-white">
                         <div className="flex items-center">
@@ -1233,16 +1136,19 @@ export default function UserTable({
                         />
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-foreground dark:text-white">
-                        <select
+                        <CustomDropdown
+                          options={locations}
                           value={editRow?.location || ''}
-                          onChange={(e) => handleEditInputChange('location', e.target.value)}
-                          className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-sm"
-                        >
-                          <option value="">Select Location</option>
-                          {locations.map(location => (
-                            <option key={location} value={location}>{location}</option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleEditInputChange('location', value)}
+                          onAddNew={(value) => {
+                            // Also add to location relationships with a default location code
+                            const newRelationship = { location: value, locationCode: value };
+                            setLocationRelationships(prev => [...prev, newRelationship]);
+                            saveDropdownOption('locations', value);
+                            handleEditInputChange('location', value);
+                          }}
+                          placeholder="Select Location"
+                        />
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-foreground dark:text-white">
                         <input
@@ -1253,16 +1159,16 @@ export default function UserTable({
                         />
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-foreground dark:text-white">
-                        <select
+                        <CustomDropdown
+                          options={connectivities}
                           value={editRow?.connectivity || ''}
-                          onChange={(e) => handleEditInputChange('connectivity', e.target.value)}
-                          className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-sm"
-                        >
-                          <option value="">Select Connectivity</option>
-                          {connectivities.map(conn => (
-                            <option key={conn} value={conn}>{conn}</option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleEditInputChange('connectivity', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('connectivities', value);
+                            handleEditInputChange('connectivity', value);
+                          }}
+                          placeholder="Select Connectivity"
+                        />
                       </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 lg:pr-8">
                         <div className="flex space-x-2">

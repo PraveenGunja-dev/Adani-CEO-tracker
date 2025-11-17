@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ThemeProvider } from "@/app/components/ThemeProvider";
 
 // Add the Adani font
 const adani = localFont({
@@ -25,7 +26,9 @@ export default function RootLayout({
         className={`${adani.variable} antialiased h-full font-sans`}
         style={{ fontFamily: 'var(--font-adani)' }}
       >
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

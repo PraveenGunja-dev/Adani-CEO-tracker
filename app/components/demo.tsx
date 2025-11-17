@@ -67,7 +67,7 @@ const Demo = () => {
           {/* Cards Section */}
         </div>
       </div>
-      <div className="w-full mb-32 bg-white dark:bg-[#171717]">
+      <div className="w-full pb-32 bg-white dark:bg-[#171717]">
         <Cards />
       </div>
     </main>

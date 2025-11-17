@@ -6,8 +6,13 @@ import Link from "next/link";
 const Cards = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-3 max-w-7xl mx-auto">
-      {/* Card 1 */}
-      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717]">
+      {/* Card 1 - Live */}
+      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717] relative overflow-hidden">
+        <div className="absolute right-4">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+            Live
+          </span>
+        </div>
         <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Capacity Tracker</h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4">
           Innovative energy solutions tailored to meet your specific needs and requirements.
@@ -19,57 +24,82 @@ const Cards = () => {
         </Link>
       </MagicCard>
 
-      {/* Card 2 */}
-      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717]">
+      {/* Card 2 - Upcoming */}
+      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717] relative overflow-hidden">
+        <div className="absolute right-4">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+            Upcoming
+          </span>
+        </div>
         <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Sustainability</h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4">
           Commitment to sustainable practices that protect our environment for future generations.
         </p>
-        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95">
+        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95 opacity-50 cursor-not-allowed" disabled>
           Learn More
         </button>
       </MagicCard>
 
-      {/* Card 3 */}
-      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717]">
+      {/* Card 3 - Upcoming */}
+      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717] relative overflow-hidden">
+        <div className="absolute right-4">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+            Upcoming
+          </span>
+        </div>
         <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Innovation</h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4">
           Cutting-edge technology and research driving the future of energy.
         </p>
-        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95">
+        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95 opacity-50 cursor-not-allowed" disabled>
           Learn More
         </button>
       </MagicCard>
 
-      {/* Card 4 */}
-      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717]">
+      {/* Card 4 - Upcoming */}
+      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717] relative overflow-hidden">
+        <div className="absolute right-4">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+            Upcoming
+          </span>
+        </div>
         <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Partnerships</h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4">
           Strong partnerships that create value and drive success for all stakeholders.
         </p>
-        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95">
+        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95 opacity-50 cursor-not-allowed" disabled>
           Learn More
         </button>
       </MagicCard>
 
-      {/* Card 5 */}
-      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717]">
+      {/* Card 5 - Upcoming */}
+      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717] relative overflow-hidden">
+        <div className="absolute right-4">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+            Upcoming
+          </span>
+        </div>
         <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Global Reach</h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4">
           Worldwide presence with operations across multiple continents and regions.
         </p>
-        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95">
+        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95 opacity-50 cursor-not-allowed" disabled>
           Learn More
         </button>
       </MagicCard>
 
-      {/* Card 6 */}
-      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717]">
+      {/* Card 6 - Upcoming */}
+      <MagicCard className="p-6 rounded-xl shadow-lg bg-white dark:bg-[#171717] relative overflow-hidden">
+        <div className="absolute right-4">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+            Upcoming
+          </span>
+        </div>
         <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">Community Impact</h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4">
           Positive impact on communities through education, healthcare, and development programs.
         </p>
-        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95">
+        <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-medium py-2 px-4 rounded-lg transition-all hover:from-indigo-600 hover:to-purple-600 active:scale-95 opacity-50 cursor-not-allowed" disabled>
           Learn More
         </button>
       </MagicCard>

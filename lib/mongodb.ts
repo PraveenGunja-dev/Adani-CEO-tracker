@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb';
 
-// Use direct connection string instead of SRV record to avoid DNS issues
-const MONGODB_URI = process.env.MONGODB_URI?.replace('mongodb+srv://', 'mongodb://') || 'mongodb://localhost:27017/adani-excel';
+// Use the MongoDB URI as-is for MongoDB Atlas connections
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/adani-excel';
 const MONGODB_DB = process.env.MONGODB_DB || 'adani-excel';
 
 type MongoClientType = {
@@ -23,11 +23,14 @@ export async function connectToDatabase() {
   try {
     // Add proper SSL options for MongoDB connections
     const client = new MongoClient(MONGODB_URI, {
-      tls: false, // Disable TLS for direct connection
+      tls: true,
       retryWrites: true,
       // Add options to handle connection issues
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+      // SSL options for MongoDB Atlas
+      tlsAllowInvalidCertificates: false, // Set to false for production
+      tlsAllowInvalidHostnames: false, // Set to false for production
     });
     
     await client.connect();
