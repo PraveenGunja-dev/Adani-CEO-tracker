@@ -87,7 +87,7 @@ export default function CustomDropdown({
           type="button"
           disabled={disabled}
           onClick={() => !disabled && setIsOpen(!isOpen)}
-          className={`w-full px-4 py-2 text-left bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+          className={`w-full px-4 py-2 text-left bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0B74B0] focus:border-[#0B74B0] ${
             disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
           }`}
         >
@@ -120,7 +120,7 @@ export default function CustomDropdown({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Search or type to add new..."
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-t-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-t-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0B74B0] focus:border-[#0B74B0]"
                 autoFocus
               />
             </div>
@@ -130,15 +130,15 @@ export default function CustomDropdown({
                 <li
                   key={option}
                   onClick={() => handleSelect(option)}
-                  className={`cursor-pointer select-none relative py-2 pl-4 pr-9 hover:bg-blue-50 dark:hover:bg-gray-700 ${
-                    value === option ? "bg-blue-50 dark:bg-gray-700" : ""
+                  className={`cursor-pointer select-none relative py-2 pl-4 pr-9 hover:bg-[#0B74B0]/10 dark:hover:bg-[#75479C]/20 ${
+                    value === option ? "bg-[#0B74B0]/10 dark:bg-[#75479C]/20" : ""
                   }`}
                 >
                   <span className={`block truncate ${value === option ? "font-semibold" : "font-normal"}`}>
                     {option}
                   </span>
                   {value === option && (
-                    <span className="text-blue-600 dark:text-blue-400 absolute inset-y-0 right-0 flex items-center pr-4">
+                    <span className="text-[#0B74B0] dark:text-[#75479C] absolute inset-y-0 right-0 flex items-center pr-4">
                       <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
@@ -150,7 +150,7 @@ export default function CustomDropdown({
               {searchTerm && !filteredOptions.includes(searchTerm.trim()) && onAddNew && (
                 <li
                   onClick={handleAddNew}
-                  className="cursor-pointer select-none relative py-2 pl-4 pr-9 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700"
+                  className="cursor-pointer select-none relative py-2 pl-4 pr-9 text-[#0B74B0] dark:text-[#75479C] hover:bg-[#0B74B0]/10 dark:hover:bg-[#75479C]/20"
                 >
                   <span className="block truncate font-semibold">
                     Add "{searchTerm}"

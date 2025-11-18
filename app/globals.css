@@ -10,12 +10,12 @@
   --card-border: #e2e8f0;
   --input-background: #f1f5f9;
   --input-border: #cbd5e1;
-  --button-primary: #4f46e5;
-  --button-primary-hover: #4338ca;
+  --button-primary: #0B74B0;
+  --button-primary-hover: #095a87;
   --button-secondary: #94a3b8;
   --button-secondary-hover: #64748b;
-  --button-success: #10b981;
-  --button-success-hover: #059669;
+  --button-success: #75479C;
+  --button-success-hover: #5a357a;
   --button-danger: #ef4444;
   --button-danger-hover: #dc2626;
   --table-header: #f8fafc;
@@ -55,6 +55,10 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Adani Brand Colors */
+  --adani-blue: #0B74B0;
+  --adani-purple: #75479C;
+  --adani-pink: #BD3861;
 }
 
 @theme inline {
@@ -112,6 +116,10 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* Adani Brand Colors */
+  --color-adani-blue: var(--adani-blue);
+  --color-adani-purple: var(--adani-purple);
+  --color-adani-pink: var(--adani-pink);
 }
 
 body {

@@ -122,15 +122,15 @@ const ApplicationPage = () => {
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white dark:bg-[#171717] p-4 rounded-lg shadow">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Total Capacity</h3>
-                <p className="text-2xl font-bold text-blue-600">1,250 MW</p>
+                <p className="text-2xl font-bold text-[#0B74B0]">1,250 MW</p>
               </div>
               <div className="bg-white dark:bg-[#171717] p-4 rounded-lg shadow">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Active Projects</h3>
-                <p className="text-2xl font-bold text-green-600">24</p>
+                <p className="text-2xl font-bold text-[#75479C]">24</p>
               </div>
               <div className="bg-white dark:bg-[#171717] p-4 rounded-lg shadow">
                 <h3 className="font-semibold text-gray-900 dark:text-white">Efficiency</h3>
-                <p className="text-2xl font-bold text-purple-600">94%</p>
+                <p className="text-2xl font-bold text-[#BD3861]">94%</p>
               </div>
             </div>
           </div>
@@ -157,9 +157,9 @@ const ApplicationPage = () => {
         <div className="flex items-center">
           <div className="flex items-center">
             <img 
-              src="/Adani_logo.png" 
+              src="/adani-re.png" 
               alt="Adani Logo" 
-              className="h-8 object-contain"
+              className="h-16 ml-4 object-contain"
             />
           </div>
         </div>

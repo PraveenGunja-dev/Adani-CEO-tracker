@@ -60,7 +60,7 @@ export default function VariableManager() {
             <p>Logged in as: {user.username} ({user.email})</p>
             <button 
               onClick={logout}
-              className="mt-2 px-4 py-2 bg-red-500 text-white rounded"
+              className="mt-2 px-4 py-2 bg-[#BD3861] text-white rounded hover:bg-[#BD3861]/90 transition-colors"
             >
               Logout
             </button>
@@ -93,13 +93,13 @@ export default function VariableManager() {
             <div className="space-x-2">
               <button 
                 onClick={handleLogin}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
+                className="px-4 py-2 bg-[#0B74B0] text-white rounded hover:bg-[#0B74B0]/90 transition-colors"
               >
                 Login
               </button>
               <button 
                 onClick={handleRegister}
-                className="px-4 py-2 bg-green-500 text-white rounded"
+                className="px-4 py-2 bg-[#75479C] text-white rounded hover:bg-[#75479C]/90 transition-colors"
               >
                 Register
               </button>
@@ -112,7 +112,7 @@ export default function VariableManager() {
       <div className="p-4 border rounded">
         <h3 className="text-lg font-semibold mb-2">Variables</h3>
         
-        {error && <p className="text-red-500 mb-2">Error: {error}</p>}
+        {error && <p className="text-[#BD3861] mb-2">Error: {error}</p>}
         
         <div className="mb-4">
           <input
@@ -131,7 +131,7 @@ export default function VariableManager() {
           />
           <button 
             onClick={handleSetVariable}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
+            className="px-4 py-2 bg-[#0B74B0] text-white rounded hover:bg-[#0B74B0]/90 transition-colors"
           >
             Set Variable
           </button>
@@ -139,7 +139,7 @@ export default function VariableManager() {
         
         <button 
           onClick={refresh}
-          className="mb-4 px-4 py-2 bg-gray-500 text-white rounded"
+          className="mb-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
         >
           Refresh
         </button>
@@ -157,7 +157,7 @@ export default function VariableManager() {
                   </div>
                   <button 
                     onClick={() => handleDeleteVariable(variableKey)}
-                    className="px-2 py-1 bg-red-500 text-white rounded text-sm"
+                    className="px-2 py-1 bg-[#BD3861] text-white rounded text-sm hover:bg-[#BD3861]/90 transition-colors"
                   >
                     Delete
                   </button>

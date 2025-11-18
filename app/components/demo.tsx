@@ -57,7 +57,7 @@ const Demo = () => {
         </button>
       </div>
       
-      <div className="min-h-screen h-full min-w-screen flex justify-center items-center bg-gradient-to-b from-[#067cb5]/30 via-[#843b9a]/20 to-white dark:from-[#067cb5]/30 dark:via-[#843b9a]/20 dark:to-[#171717] p-4 sm:p-8">
+      <div className="w-full h-full min-w-screen flex justify-center items-center bg-gradient-to-b from-[#0B74B0]/30 via-[#75479C]/20 to-white dark:from-[#0B74B0]/30 dark:via-[#75479C]/20 dark:to-[#171717] p-4 sm:p-8">
         <div className="max-w-10xl w-full mx-auto">
           {/* Hero Section */}
           <div className="mb-16">

@@ -20,6 +20,8 @@ import { Bar, Pie } from 'react-chartjs-2';
 import exDataFY24 from './ex.json';
 import exDataFY25 from './ex_fy25.json';
 import exDataFY26 from './ex_fy26.json';
+import exDataFY27 from './ex_fy27.json';
+import exDataFY28 from './ex_fy28.json';
 
 // Register Chart.js components
 ChartJS.register(
@@ -89,6 +91,12 @@ export default function AnalyticsPage() {
       case 'FY_26':
         data = exDataFY26;
         break;
+      case 'FY_27':
+        data = exDataFY27;
+        break;
+      case 'FY_28':
+        data = exDataFY28;
+        break;
       default:
         data = exDataFY24;
     }
@@ -142,14 +150,14 @@ export default function AnalyticsPage() {
           label: 'Capacity (MW)',
           data: Object.values(typeData),
           backgroundColor: [
-            'rgba(255, 206, 86, 0.8)', // Solar - Yellow
-            'rgba(75, 192, 192, 0.8)',  // Wind - Teal
-            'rgba(153, 102, 255, 0.8)', // Hybrid - Purple
+            'rgba(11, 116, 176, 0.8)', // Adani Blue (#0B74B0)
+            'rgba(117, 71, 156, 0.8)',  // Adani Purple (#75479C)
+            'rgba(189, 56, 97, 0.8)',   // Adani Pink (#BD3861)
           ],
           borderColor: [
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
+            'rgba(11, 116, 176, 1)', // Adani Blue (#0B74B0)
+            'rgba(117, 71, 156, 1)',  // Adani Purple (#75479C)
+            'rgba(189, 56, 97, 1)',   // Adani Pink (#BD3861)
           ],
           borderWidth: 1,
         },
@@ -164,12 +172,12 @@ export default function AnalyticsPage() {
           label: 'Projects',
           data: Object.values(groupData),
           backgroundColor: [
-            'rgba(54, 162, 235, 0.8)', // AGEL - Blue
-            'rgba(255, 99, 132, 0.8)',  // ACL - Red
+            'rgba(11, 116, 176, 0.8)', // Adani Blue (#0B74B0)
+            'rgba(189, 56, 97, 0.8)',   // Adani Pink (#BD3861)
           ],
           borderColor: [
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 99, 132, 1)',
+            'rgba(11, 116, 176, 1)', // Adani Blue (#0B74B0)
+            'rgba(189, 56, 97, 1)',   // Adani Pink (#BD3861)
           ],
           borderWidth: 1,
         },
@@ -211,6 +219,8 @@ export default function AnalyticsPage() {
                 <option value="FY_24">FY 2023-24</option>
                 <option value="FY_25">FY 2024-25</option>
                 <option value="FY_26">FY 2025-26</option>
+                <option value="FY_27">FY 2026-27</option>
+                <option value="FY_28">FY 2027-28</option>
               </select>
               <svg 
                 className="absolute right-3 top-8 h-5 w-5 text-gray-400 dark:text-gray-300 pointer-events-none" 

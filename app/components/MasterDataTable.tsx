@@ -304,13 +304,13 @@ export default function MasterDataTable() {
       
       {/* Add new option form - only visible when authenticated */}
       {user && (
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-          <h4 className="text-md font-semibold text-blue-800 dark:text-blue-200 mb-3">Add New Dropdown Option</h4>
-          <div className="flex flex-col sm:flex-row gap-3">
+        <div className="mb-6 p-4 bg-[#0B74B0]/10 dark:bg-[#0B74B0]/20 rounded-lg">
+          <h4 className="text-md font-semibold text-[#0B74B0] dark:text-[#75479C] mb-3">Add New Dropdown Option</h4>
+          <div className="flex gap-2">
             <select
               value={newOption.category}
-              onChange={(e) => setNewOption({...newOption, category: e.target.value})}
-              className="px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setNewOption(prev => ({ ...prev, category: e.target.value }))}
+              className="px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0B74B0]"
             >
               <option value="groups">Group</option>
               <option value="ppaMerchants">PPA/Merchant</option>
@@ -322,15 +322,15 @@ export default function MasterDataTable() {
             <input
               type="text"
               value={newOption.value}
-              onChange={(e) => setNewOption({...newOption, value: e.target.value})}
-              placeholder="Enter new option value"
-              className="flex-1 px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setNewOption(prev => ({ ...prev, value: e.target.value }))}
+              placeholder="Enter new option"
+              className="flex-1 px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0B74B0]"
             />
             <button
               onClick={handleAddOption}
-              className="px-4 py-2 text-sm font-medium text-white bg-button-primary hover:bg-button-primary-hover rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-button-primary transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-[#0B74B0] hover:bg-[#0B74B0]/90 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0B74B0] transition-colors"
             >
-              Add Option
+              Add
             </button>
           </div>
         </div>
@@ -338,34 +338,34 @@ export default function MasterDataTable() {
       
       {/* Location Relationships Management - only visible when authenticated */}
       {user && (
-        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
-          <h4 className="text-md font-semibold text-green-800 dark:text-green-200 mb-3">Location & Location Code Relationships</h4>
-          <div className="mb-4">
-            <div className="flex flex-col sm:flex-row gap-3 mb-3">
-              <input
-                type="text"
-                value={newRelationship.location}
-                onChange={(e) => setNewRelationship({...newRelationship, location: e.target.value})}
-                placeholder="Enter location"
-                className="flex-1 px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <select
-                value={newRelationship.locationCode}
-                onChange={(e) => setNewRelationship({...newRelationship, locationCode: e.target.value})}
-                className="px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Location Code</option>
-                {dropdownOptions.locationCodes.map(code => (
-                  <option key={code} value={code}>{code}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleAddRelationship}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 transition-colors"
-              >
-                Add Relationship
-              </button>
-            </div>
+        <div className="mb-6 p-4 bg-[#75479C]/10 dark:bg-[#75479C]/20 rounded-lg">
+          <h4 className="text-md font-semibold text-[#75479C] dark:text-[#75479C] mb-3">Location & Location Code Relationships</h4>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newRelationship.location}
+              onChange={(e) => setNewRelationship(prev => ({ ...prev, location: e.target.value }))}
+              placeholder="Location"
+              className="flex-1 px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0B74B0]"
+            />
+            <input
+              type="text"
+              value={newRelationship.locationCode}
+              onChange={(e) => setNewRelationship(prev => ({ ...prev, locationCode: e.target.value }))}
+              placeholder="Location Code"
+              className="px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0B74B0]"
+            />
+            <button
+              onClick={() => {
+                if (newRelationship.location && newRelationship.locationCode) {
+                  setLocationRelationships(prev => [...prev, newRelationship]);
+                  setNewRelationship({ location: '', locationCode: '' });
+                }
+              }}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#75479C] hover:bg-[#75479C]/90 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#75479C] transition-colors"
+            >
+              Add
+            </button>
           </div>
           
           <div className="bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">

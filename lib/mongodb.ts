@@ -23,14 +23,20 @@ export async function connectToDatabase() {
   try {
     // Add proper SSL options for MongoDB connections
     const client = new MongoClient(MONGODB_URI, {
-      tls: true,
-      retryWrites: true,
+      // Remove SSL options that might be causing issues
       // Add options to handle connection issues
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      // SSL options for MongoDB Atlas
-      tlsAllowInvalidCertificates: false, // Set to false for production
-      tlsAllowInvalidHostnames: false, // Set to false for production
+      // For MongoDB Atlas connections, we might need to adjust SSL settings
+      // If using localhost, SSL should be disabled
+      ...(MONGODB_URI.includes('localhost') || MONGODB_URI.includes('127.0.0.1') ? {
+        tls: false,
+      } : {
+        tls: true,
+        // SSL options for MongoDB Atlas
+        tlsAllowInvalidCertificates: false, // Set to false for production
+        tlsAllowInvalidHostnames: false, // Set to false for production
+      })
     });
     
     await client.connect();

@@ -62,15 +62,15 @@ export default function LoginPage() {
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4"
+      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0B74B0]/10 to-[#75479C]/10 dark:from-gray-900 dark:to-gray-800 p-4"
     >
       {/* Login Card */}
       <div className="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden w-full max-w-md">
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-center">
+        <div className="bg-gradient-to-r from-[#0B74B0] to-[#75479C] p-6 text-center">
           <div className="flex justify-center mb-4">
             <div className="bg-white p-2 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-[#0B74B0]" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
             </div>
@@ -86,7 +86,7 @@ export default function LoginPage() {
         <div className="p-6">
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
+            <div className="mb-4 p-3 bg-[#BD3861]/10 text-[#BD3861] rounded-lg text-sm border border-[#BD3861]/20">
               <div className="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -114,7 +114,7 @@ export default function LoginPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0B74B0] focus:border-[#0B74B0] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     placeholder="Enter your username"
                     required={isRegistering}
                   />
@@ -138,7 +138,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0B74B0] focus:border-[#0B74B0] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   placeholder="Enter your email"
                   required
                 />
@@ -160,7 +160,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0B74B0] focus:border-[#0B74B0] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   placeholder="Enter your password"
                   required
                 />
@@ -170,7 +170,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-medium py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+              className="w-full bg-gradient-to-r from-[#0B74B0] to-[#75479C] hover:from-[#0B74B0]/90 hover:to-[#75479C]/90 text-white font-medium py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
               {loading ? (
                 <span className="flex items-center justify-center">
@@ -193,7 +193,7 @@ export default function LoginPage() {
                 setIsRegistering(!isRegistering);
                 setError('');
               }}
-              className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm"
+              className="text-[#0B74B0] hover:text-[#0B74B0]/80 dark:text-[#75479C] dark:hover:text-[#75479C]/80 font-medium text-sm"
             >
               {isRegistering 
                 ? 'Already have an account? Sign In' 

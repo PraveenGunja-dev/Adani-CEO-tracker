@@ -7,6 +7,8 @@ import * as XLSX from 'xlsx';
 import exDataFY24 from './ex.json';
 import exDataFY25 from './ex_fy25.json';
 import exDataFY26 from './ex_fy26.json';
+import exDataFY27 from './ex_fy27.json';
+import exDataFY28 from './ex_fy28.json';
 
 // Import the custom dropdown component
 import CustomDropdown from './CustomDropdown';
@@ -146,97 +148,230 @@ export default function UserTable({
 
   // Load data based on fiscal year
   useEffect(() => {
-    // Get the default data for this fiscal year
-    let defaultData: any[] = [];
-    
-    // Select data based on fiscal year
-    switch (fiscalYear) {
-      case 'FY_24':
-        defaultData = exDataFY24;
-        break;
-      case 'FY_25':
-        defaultData = exDataFY25;
-        break;
-      case 'FY_26':
-        defaultData = exDataFY26;
-        break;
-      default:
-        defaultData = exDataFY24;
-    }
-    
-    // Check if we should force reload default data
-    const forceReload = localStorage.getItem(`forceReload_${fiscalYear}`);
-    
-    // Convert the default fiscal year data to TableRow format
-    const convertedDefaultData: TableRow[] = defaultData.map((item: any, index: number) => ({
-      id: index + 1,
-      sno: item["Sl No"] || index + 1,
-      capacity: typeof item["Capacity"] === 'number' ? item["Capacity"] : null,
-      group: item["Group"] || '',
-      ppaMerchant: item["PPA/Merchant"] || '',
-      type: item["Type"] || '',
-      solar: typeof item["Solar"] === 'number' ? item["Solar"] : null,
-      wind: typeof item["Wind"] === 'number' ? item["Wind"] : null,
-      spv: item["SPV"] || '',
-      locationCode: item["Location Code"] || '',
-      location: item["Location"] || '',
-      pss: formatPSSField(item["PSS"] || ''), // Format PSS field to ensure it has "PSS - " prefix
-      connectivity: item["Connectivity"] || ''
-    }));
-    
-    // Try to load saved data for this fiscal year, unless force reload is requested
-    if (!forceReload) {
-      const savedData = localStorage.getItem(`tableData_${fiscalYear}`);
-      if (savedData) {
-        try {
-          const parsedData = JSON.parse(savedData);
-          // Use saved data
-          setData(parsedData);
-          if (parsedData.length > 0) {
-            setNextId(Math.max(...parsedData.map((row: TableRow) => row.id)) + 1);
-            setNextSno(Math.max(...parsedData.map((row: TableRow) => row.sno)) + 1);
-          } else {
-            // If saved data is empty, use default data
-            setData(convertedDefaultData);
-            setNextId(convertedDefaultData.length > 0 ? Math.max(...convertedDefaultData.map(row => row.id)) + 1 : 1);
-            setNextSno(convertedDefaultData.length > 0 ? Math.max(...convertedDefaultData.map(row => row.sno)) + 1 : 1);
+    const loadTableData = async () => {
+      try {
+        // Reset data state immediately when fiscal year changes
+        setData([]);
+        setNextId(1);
+        setNextSno(1);
+        
+        // Add a small delay to ensure state is reset before loading new data
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
+        // Try to load from database first
+        const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`, {
+          cache: 'no-store', // Disable caching
+          headers: {
+            'Cache-Control': 'no-cache'
           }
-        } catch (e) {
-          console.error('Error parsing saved data:', e);
-          // If there's an error parsing saved data, use default data
-          setData(convertedDefaultData);
-          setNextId(convertedDefaultData.length > 0 ? Math.max(...convertedDefaultData.map(row => row.id)) + 1 : 1);
-          setNextSno(convertedDefaultData.length > 0 ? Math.max(...convertedDefaultData.map(row => row.sno)) + 1 : 1);
+        });
+        
+        console.log(`Loading data for fiscal year: ${fiscalYear}`);
+        console.log('Database response status:', response.status);
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`Database data for ${fiscalYear}:`, result);
+          
+          if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+            // Use database data
+            const validatedData = result.data.map((row: any) => ({
+              id: row.id || 0,
+              sno: row.sno || 0,
+              capacity: typeof row.capacity === 'number' ? row.capacity : null,
+              group: row.group || '',
+              ppaMerchant: row.ppaMerchant || '',
+              type: row.type || '',
+              solar: typeof row.solar === 'number' ? row.solar : null,
+              wind: typeof row.wind === 'number' ? row.wind : null,
+              spv: row.spv || '',
+              locationCode: row.locationCode || '',
+              location: row.location || '',
+              pss: row.pss || '',
+              connectivity: row.connectivity || ''
+            }));
+            
+            setData(validatedData);
+            if (validatedData.length > 0) {
+              setNextId(Math.max(...validatedData.map((row: TableRow) => row.id)) + 1);
+              setNextSno(Math.max(...validatedData.map((row: TableRow) => row.sno)) + 1);
+            }
+            return;
+          }
+        } else {
+          console.error('Failed to load data from database:', response.status, response.statusText);
         }
-      } else {
-        // If no saved data, use default data
+        
+        // If no database data or error, use default data based on fiscal year
+        let defaultData: any[] = [];
+        
+        // Select data based on fiscal year - corrected mapping
+        switch (fiscalYear) {
+          case 'FY_23':
+            defaultData = exDataFY24; // FY_23 should use ex.json data
+            break;
+          case 'FY_24':
+            defaultData = exDataFY25; // FY_24 should use ex_fy25.json data
+            break;
+          case 'FY_25':
+            defaultData = exDataFY26; // FY_25 should use ex_fy26.json data
+            break;
+          case 'FY_26':
+            defaultData = []; // FY_26 should be empty
+            break;
+          case 'FY_27':
+            defaultData = []; // FY_27 should be empty
+            break;
+          case 'FY_28':
+            defaultData = exDataFY28;
+            break;
+          default:
+            defaultData = exDataFY24;
+        }
+        
+        // Convert the default fiscal year data to TableRow format
+        const convertedDefaultData: TableRow[] = defaultData.map((item: any, index: number) => {
+          // Handle different possible field names for PSS
+          let pssValue = '';
+          if (item["PSS"]) {
+            pssValue = item["PSS"];
+          } else if (item["PSS -"]) {
+            pssValue = item["PSS -"];
+          } else if (item["PSS-"]) {
+            pssValue = item["PSS-"];
+          }
+          
+          // Format PSS field properly
+          const formattedPSS = formatPSSField(pssValue || '');
+          
+          return {
+            id: index + 1,
+            sno: item["Sl No"] || index + 1,
+            capacity: typeof item["Capacity"] === 'number' ? item["Capacity"] : 
+                      (typeof item["Capacity"] === 'string' && !isNaN(parseFloat(item["Capacity"])) ? parseFloat(item["Capacity"]) : null),
+            group: item["Group"] || '',
+            ppaMerchant: item["PPA/Merchant"] || '',
+            type: item["Type"] || '',
+            solar: typeof item["Solar"] === 'number' ? item["Solar"] : 
+                   (typeof item["Solar"] === 'string' && !isNaN(parseFloat(item["Solar"])) ? parseFloat(item["Solar"]) : null),
+            wind: typeof item["Wind"] === 'number' ? item["Wind"] : 
+                  (typeof item["Wind"] === 'string' && !isNaN(parseFloat(item["Wind"])) ? parseFloat(item["Wind"]) : null),
+            spv: item["SPV"] || '',
+            locationCode: item["Location Code"] || '',
+            location: item["Location"] || '',
+            pss: formattedPSS,
+            connectivity: item["Connectivity"] || ''
+          };
+        });
+        
         setData(convertedDefaultData);
-        setNextId(convertedDefaultData.length > 0 ? Math.max(...convertedDefaultData.map(row => row.id)) + 1 : 1);
-        setNextSno(convertedDefaultData.length > 0 ? Math.max(...convertedDefaultData.map(row => row.sno)) + 1 : 1);
+        if (convertedDefaultData.length > 0) {
+          setNextId(Math.max(...convertedDefaultData.map(row => row.id)) + 1);
+          setNextSno(Math.max(...convertedDefaultData.map(row => row.sno)) + 1);
+        }
+      } catch (error) {
+        console.error('Error loading table data:', error);
+        // Fallback to default data
+        let defaultData: any[] = [];
+        
+        // Select data based on fiscal year - corrected mapping
+        switch (fiscalYear) {
+          case 'FY_23':
+            defaultData = exDataFY24; // FY_23 should use ex.json data
+            break;
+          case 'FY_24':
+            defaultData = exDataFY25; // FY_24 should use ex_fy25.json data
+            break;
+          case 'FY_25':
+            defaultData = exDataFY26; // FY_25 should use ex_fy26.json data
+            break;
+          case 'FY_26':
+            defaultData = []; // FY_26 should be empty
+            break;
+          case 'FY_27':
+            defaultData = []; // FY_27 should be empty
+            break;
+          case 'FY_28':
+            defaultData = exDataFY28;
+            break;
+          default:
+            defaultData = exDataFY24;
+        }
+        
+        // Convert the default fiscal year data to TableRow format
+        const convertedDefaultData: TableRow[] = defaultData.map((item: any, index: number) => {
+          // Handle different possible field names for PSS
+          let pssValue = '';
+          if (item["PSS"]) {
+            pssValue = item["PSS"];
+          } else if (item["PSS -"]) {
+            pssValue = item["PSS -"];
+          } else if (item["PSS-"]) {
+            pssValue = item["PSS-"];
+          }
+          
+          // Format PSS field properly
+          const formattedPSS = formatPSSField(pssValue || '');
+          
+          return {
+            id: index + 1,
+            sno: item["Sl No"] || index + 1,
+            capacity: typeof item["Capacity"] === 'number' ? item["Capacity"] : 
+                      (typeof item["Capacity"] === 'string' && !isNaN(parseFloat(item["Capacity"])) ? parseFloat(item["Capacity"]) : null),
+            group: item["Group"] || '',
+            ppaMerchant: item["PPA/Merchant"] || '',
+            type: item["Type"] || '',
+            solar: typeof item["Solar"] === 'number' ? item["Solar"] : 
+                   (typeof item["Solar"] === 'string' && !isNaN(parseFloat(item["Solar"])) ? parseFloat(item["Solar"]) : null),
+            wind: typeof item["Wind"] === 'number' ? item["Wind"] : 
+                  (typeof item["Wind"] === 'string' && !isNaN(parseFloat(item["Wind"])) ? parseFloat(item["Wind"]) : null),
+            spv: item["SPV"] || '',
+            locationCode: item["Location Code"] || '',
+            location: item["Location"] || '',
+            pss: formattedPSS,
+            connectivity: item["Connectivity"] || ''
+          };
+        });
+        
+        setData(convertedDefaultData);
+        if (convertedDefaultData.length > 0) {
+          setNextId(Math.max(...convertedDefaultData.map(row => row.id)) + 1);
+          setNextSno(Math.max(...convertedDefaultData.map(row => row.sno)) + 1);
+        }
       }
-    } else {
-      // Force reload default data
-      setData(convertedDefaultData);
-      setNextId(convertedDefaultData.length > 0 ? Math.max(...convertedDefaultData.map(row => row.id)) + 1 : 1);
-      setNextSno(convertedDefaultData.length > 0 ? Math.max(...convertedDefaultData.map(row => row.sno)) + 1 : 1);
-      // Remove the force reload flag
-      localStorage.removeItem(`forceReload_${fiscalYear}`);
-    }
+    };
+    
+    loadTableData();
   }, [fiscalYear]);
   
   // Helper function to format PSS field
   const formatPSSField = (pssValue: string): string => {
     if (!pssValue) return '';
+    
+    // Remove extra spaces and normalize the format
+    let cleanedValue = pssValue.trim();
+    
     // If the value already starts with "PSS - ", return as is
-    if (pssValue.startsWith('PSS - ')) {
-      return pssValue;
+    if (cleanedValue.startsWith('PSS - ')) {
+      return cleanedValue;
     }
-    // If the value starts with "PSS-", add a space
-    if (pssValue.startsWith('PSS-')) {
-      return pssValue.replace('PSS-', 'PSS - ');
+    
+    // If the value starts with "PSS-" or "PSS -" with extra spaces, normalize it
+    if (cleanedValue.startsWith('PSS-') || cleanedValue.startsWith('PSS -')) {
+      // Extract the part after "PSS-" or "PSS -"
+      const parts = cleanedValue.split(/[-\s]+/);
+      if (parts.length > 1) {
+        return `PSS - ${parts.slice(1).join(' ')}`;
+      }
+      return 'PSS - ';
     }
+    
     // If the value is just a number or other text, add the prefix
-    return `PSS - ${pssValue}`;
+    if (cleanedValue) {
+      return `PSS - ${cleanedValue}`;
+    }
+    
+    return '';
   };
 
   // Function to save all dropdown options to API
@@ -298,7 +433,47 @@ export default function UserTable({
   // Save data to localStorage whenever data changes, separated by fiscal year
   useEffect(() => {
     if (fiscalYear) {
+      // Save to localStorage for backward compatibility
       localStorage.setItem(`tableData_${fiscalYear}`, JSON.stringify(data));
+      
+      // Save to database
+      const saveToDatabase = async () => {
+        try {
+          // Validate data before sending to database
+          const validatedData = data.map(row => ({
+            id: row.id,
+            sno: row.sno,
+            capacity: row.capacity,
+            group: row.group,
+            ppaMerchant: row.ppaMerchant,
+            type: row.type,
+            solar: row.solar,
+            wind: row.wind,
+            spv: row.spv,
+            locationCode: row.locationCode,
+            location: row.location,
+            pss: row.pss,
+            connectivity: row.connectivity
+          }));
+          
+          const response = await fetch('/api/table-data', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache'
+            },
+            body: JSON.stringify({ fiscalYear, data: validatedData }),
+          });
+          
+          if (!response.ok) {
+            console.error('Failed to save data to database:', response.status, response.statusText);
+          }
+        } catch (error) {
+          console.error('Error saving table data to database:', error);
+        }
+      };
+      
+      saveToDatabase();
     }
   }, [data, fiscalYear]);
 
@@ -389,9 +564,7 @@ export default function UserTable({
       onFormSubmit();
     }
     
-    // Save data to localStorage
-    const updatedData = [...data, rowToAdd];
-    localStorage.setItem(`tableData_${fiscalYear}`, JSON.stringify(updatedData));
+    // The data will be automatically saved to both localStorage and database by the useEffect hook
   };
 
   const handleDeleteRow = (id: number) => {
@@ -401,7 +574,8 @@ export default function UserTable({
       return;
     }
     
-    setData(data.filter(row => row.id !== id));
+    const updatedData = data.filter(row => row.id !== id);
+    setData(updatedData);
     setOpenMenuId(null);
   };
 

@@ -10,15 +10,12 @@ const ShuffleHero = () => {
         {/* Adani Logo */}
         <div className="mb-6">
           <img 
-            src="/Adani_logo.png" 
+            src="/logo.png" 
             alt="Adani Logo" 
             className="h-16 object-contain"
           />
         </div>
         
-        <span className="block mb-4 text-md md:text-2xl tracking-wider dark:text-white  font-medium">
-          Best in Class Solutions
-        </span>
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mt-8 mb-6">
           CEO tracker
         </h1>
