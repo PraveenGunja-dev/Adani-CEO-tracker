@@ -44,15 +44,7 @@ interface UserTableProps {
   onFormSubmit?: () => void;
 }
 
-export default function UserTable({ 
-  fiscalYear = 'FY_24', 
-  isAuthenticated = true,
-  showTracker = false,
-  onFormSubmit
-}: UserTableProps) {
-  // This would typically come from your authentication system
-  // const isAuthenticated = true; // Placeholder for now
-  
+const UserTable = ({ fiscalYear, isAuthenticated, showTracker, onFormSubmit }: UserTableProps) => {
   const [data, setData] = useState<TableRow[]>([]);
   const [nextId, setNextId] = useState(1);
   const [nextSno, setNextSno] = useState(1);
@@ -69,19 +61,9 @@ export default function UserTable({
     pss: '',
     connectivity: ''
   });
-
-  // State for editing
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<TableRow | null>(null);
-
-  // State for dropdown menus
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-
-  // State for enhanced dropdown with add functionality
-  const [showAddInput, setShowAddInput] = useState<{[key: string]: boolean}>({});
-  const [newDropdownValue, setNewDropdownValue] = useState<{[key: string]: string}>({});
-
-  // State for filters (only for dropdown columns)
   const [filters, setFilters] = useState({
     group: '',
     ppaMerchant: '',
@@ -91,6 +73,9 @@ export default function UserTable({
     pss: '',
     connectivity: ''
   });
+  
+  // State to track if data has been loaded from database
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Refs for dropdowns
   const tableRef = useRef<HTMLDivElement>(null);
@@ -116,7 +101,7 @@ export default function UserTable({
     const loadMasterData = async () => {
       try {
         // Load dropdown options
-        const response = await fetch('/api/dropdown-options');
+        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
         if (response.ok) {
           const options = await response.json();
           // Ensure all options are arrays
@@ -131,7 +116,7 @@ export default function UserTable({
         }
         
         // Load location relationships
-        const relResponse = await fetch('/api/location-relationships');
+        const relResponse = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`);
         if (relResponse.ok) {
           const relationships = await relResponse.json();
           if (Array.isArray(relationships) && relationships.length > 0) {
@@ -144,25 +129,42 @@ export default function UserTable({
     };
     
     loadMasterData();
-  }, []);
+  }, [fiscalYear]);
 
   // Load data based on fiscal year
   useEffect(() => {
     const loadTableData = async () => {
       try {
+        console.log(`Loading data for fiscal year: ${fiscalYear}`);
+        
         // Reset data state immediately when fiscal year changes
         setData([]);
         setNextId(1);
         setNextSno(1);
+        setDataLoaded(false); // Reset data loaded flag
+        
+        // Reset filters when fiscal year changes
+        setFilters({
+          group: '',
+          ppaMerchant: '',
+          type: '',
+          locationCode: '',
+          location: '',
+          pss: '',
+          connectivity: ''
+        });
         
         // Add a small delay to ensure state is reset before loading new data
         await new Promise(resolve => setTimeout(resolve, 10));
         
-        // Try to load from database first
-        const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`, {
+        // Try to load from database first with cache busting
+        const timestamp = new Date().getTime(); // Add timestamp to bypass cache
+        const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}&t=${timestamp}`, {
           cache: 'no-store', // Disable caching
           headers: {
-            'Cache-Control': 'no-cache'
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
         });
         
@@ -173,171 +175,46 @@ export default function UserTable({
           const result = await response.json();
           console.log(`Database data for ${fiscalYear}:`, result);
           
-          if (result.data && Array.isArray(result.data) && result.data.length > 0) {
-            // Use database data
-            const validatedData = result.data.map((row: any) => ({
-              id: row.id || 0,
-              sno: row.sno || 0,
-              capacity: typeof row.capacity === 'number' ? row.capacity : null,
-              group: row.group || '',
-              ppaMerchant: row.ppaMerchant || '',
-              type: row.type || '',
-              solar: typeof row.solar === 'number' ? row.solar : null,
-              wind: typeof row.wind === 'number' ? row.wind : null,
-              spv: row.spv || '',
-              locationCode: row.locationCode || '',
-              location: row.location || '',
-              pss: row.pss || '',
-              connectivity: row.connectivity || ''
-            }));
-            
-            setData(validatedData);
-            if (validatedData.length > 0) {
-              setNextId(Math.max(...validatedData.map((row: TableRow) => row.id)) + 1);
-              setNextSno(Math.max(...validatedData.map((row: TableRow) => row.sno)) + 1);
-            }
-            return;
+          // Use database data (even if empty array)
+          const validatedData = result.data.map((row: any, index: number) => ({
+            id: row.id || (index + 1),
+            sno: row.sno || (index + 1),
+            capacity: typeof row.capacity === 'number' ? row.capacity : null,
+            group: row.group || '',
+            ppaMerchant: row.ppaMerchant || '',
+            type: row.type || '',
+            solar: typeof row.solar === 'number' ? row.solar : null,
+            wind: typeof row.wind === 'number' ? row.wind : null,
+            spv: row.spv || '',
+            locationCode: row.locationCode || '',
+            location: row.location || '',
+            pss: row.pss || '',
+            connectivity: row.connectivity || ''
+          }));
+          
+          console.log('Validated data:', validatedData);
+          setData(validatedData);
+          setDataLoaded(true); // Mark data as loaded only after successful load
+          if (validatedData.length > 0) {
+            // Set nextId and nextSno based on the highest existing values
+            const maxId = Math.max(...validatedData.map((row: TableRow) => row.id));
+            const maxSno = Math.max(...validatedData.map((row: TableRow) => row.sno));
+            setNextId(maxId + 1);
+            setNextSno(maxSno + 1);
+          } else {
+            // If no data in database, initialize with proper nextId/nextSno
+            setNextId(1);
+            setNextSno(1);
           }
+          return;
         } else {
-          console.error('Failed to load data from database:', response.status, response.statusText);
-        }
-        
-        // If no database data or error, use default data based on fiscal year
-        let defaultData: any[] = [];
-        
-        // Select data based on fiscal year - corrected mapping
-        switch (fiscalYear) {
-          case 'FY_23':
-            defaultData = exDataFY24; // FY_23 should use ex.json data
-            break;
-          case 'FY_24':
-            defaultData = exDataFY25; // FY_24 should use ex_fy25.json data
-            break;
-          case 'FY_25':
-            defaultData = exDataFY26; // FY_25 should use ex_fy26.json data
-            break;
-          case 'FY_26':
-            defaultData = []; // FY_26 should be empty
-            break;
-          case 'FY_27':
-            defaultData = []; // FY_27 should be empty
-            break;
-          case 'FY_28':
-            defaultData = exDataFY28;
-            break;
-          default:
-            defaultData = exDataFY24;
-        }
-        
-        // Convert the default fiscal year data to TableRow format
-        const convertedDefaultData: TableRow[] = defaultData.map((item: any, index: number) => {
-          // Handle different possible field names for PSS
-          let pssValue = '';
-          if (item["PSS"]) {
-            pssValue = item["PSS"];
-          } else if (item["PSS -"]) {
-            pssValue = item["PSS -"];
-          } else if (item["PSS-"]) {
-            pssValue = item["PSS-"];
-          }
-          
-          // Format PSS field properly
-          const formattedPSS = formatPSSField(pssValue || '');
-          
-          return {
-            id: index + 1,
-            sno: item["Sl No"] || index + 1,
-            capacity: typeof item["Capacity"] === 'number' ? item["Capacity"] : 
-                      (typeof item["Capacity"] === 'string' && !isNaN(parseFloat(item["Capacity"])) ? parseFloat(item["Capacity"]) : null),
-            group: item["Group"] || '',
-            ppaMerchant: item["PPA/Merchant"] || '',
-            type: item["Type"] || '',
-            solar: typeof item["Solar"] === 'number' ? item["Solar"] : 
-                   (typeof item["Solar"] === 'string' && !isNaN(parseFloat(item["Solar"])) ? parseFloat(item["Solar"]) : null),
-            wind: typeof item["Wind"] === 'number' ? item["Wind"] : 
-                  (typeof item["Wind"] === 'string' && !isNaN(parseFloat(item["Wind"])) ? parseFloat(item["Wind"]) : null),
-            spv: item["SPV"] || '',
-            locationCode: item["Location Code"] || '',
-            location: item["Location"] || '',
-            pss: formattedPSS,
-            connectivity: item["Connectivity"] || ''
-          };
-        });
-        
-        setData(convertedDefaultData);
-        if (convertedDefaultData.length > 0) {
-          setNextId(Math.max(...convertedDefaultData.map(row => row.id)) + 1);
-          setNextSno(Math.max(...convertedDefaultData.map(row => row.sno)) + 1);
+          const errorText = await response.text();
+          console.error('Failed to load data from database:', response.status, response.statusText, errorText);
+          // Don't set dataLoaded to true on error - keep it false to prevent saving
         }
       } catch (error) {
         console.error('Error loading table data:', error);
-        // Fallback to default data
-        let defaultData: any[] = [];
-        
-        // Select data based on fiscal year - corrected mapping
-        switch (fiscalYear) {
-          case 'FY_23':
-            defaultData = exDataFY24; // FY_23 should use ex.json data
-            break;
-          case 'FY_24':
-            defaultData = exDataFY25; // FY_24 should use ex_fy25.json data
-            break;
-          case 'FY_25':
-            defaultData = exDataFY26; // FY_25 should use ex_fy26.json data
-            break;
-          case 'FY_26':
-            defaultData = []; // FY_26 should be empty
-            break;
-          case 'FY_27':
-            defaultData = []; // FY_27 should be empty
-            break;
-          case 'FY_28':
-            defaultData = exDataFY28;
-            break;
-          default:
-            defaultData = exDataFY24;
-        }
-        
-        // Convert the default fiscal year data to TableRow format
-        const convertedDefaultData: TableRow[] = defaultData.map((item: any, index: number) => {
-          // Handle different possible field names for PSS
-          let pssValue = '';
-          if (item["PSS"]) {
-            pssValue = item["PSS"];
-          } else if (item["PSS -"]) {
-            pssValue = item["PSS -"];
-          } else if (item["PSS-"]) {
-            pssValue = item["PSS-"];
-          }
-          
-          // Format PSS field properly
-          const formattedPSS = formatPSSField(pssValue || '');
-          
-          return {
-            id: index + 1,
-            sno: item["Sl No"] || index + 1,
-            capacity: typeof item["Capacity"] === 'number' ? item["Capacity"] : 
-                      (typeof item["Capacity"] === 'string' && !isNaN(parseFloat(item["Capacity"])) ? parseFloat(item["Capacity"]) : null),
-            group: item["Group"] || '',
-            ppaMerchant: item["PPA/Merchant"] || '',
-            type: item["Type"] || '',
-            solar: typeof item["Solar"] === 'number' ? item["Solar"] : 
-                   (typeof item["Solar"] === 'string' && !isNaN(parseFloat(item["Solar"])) ? parseFloat(item["Solar"]) : null),
-            wind: typeof item["Wind"] === 'number' ? item["Wind"] : 
-                  (typeof item["Wind"] === 'string' && !isNaN(parseFloat(item["Wind"])) ? parseFloat(item["Wind"]) : null),
-            spv: item["SPV"] || '',
-            locationCode: item["Location Code"] || '',
-            location: item["Location"] || '',
-            pss: formattedPSS,
-            connectivity: item["Connectivity"] || ''
-          };
-        });
-        
-        setData(convertedDefaultData);
-        if (convertedDefaultData.length > 0) {
-          setNextId(Math.max(...convertedDefaultData.map(row => row.id)) + 1);
-          setNextSno(Math.max(...convertedDefaultData.map(row => row.sno)) + 1);
-        }
+        // Don't set dataLoaded to true on error - keep it false to prevent saving
       }
     };
     
@@ -383,6 +260,7 @@ export default function UserTable({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          fiscalYear,
           groups,
           ppaMerchants,
           types,
@@ -400,8 +278,57 @@ export default function UserTable({
     }
   };
 
+  // Function to save location relationships to API
+  const saveLocationRelationships = async () => {
+    try {
+      const response = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(locationRelationships)
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to save location relationships:', response.status, response.statusText);
+      }
+    } catch (error: any) {
+      console.error('Error saving location relationships:', error.message || error);
+    }
+  };
+
   // Function to save a single dropdown option and update the API
   const saveDropdownOption = async (optionType: string, value: string) => {
+    // Check if the value already exists to prevent duplicates
+    let alreadyExists = false;
+    switch (optionType) {
+      case 'groups':
+        alreadyExists = groups.includes(value);
+        break;
+      case 'ppaMerchants':
+        alreadyExists = ppaMerchants.includes(value);
+        break;
+      case 'types':
+        alreadyExists = types.includes(value);
+        break;
+      case 'locationCodes':
+        alreadyExists = locationCodes.includes(value);
+        break;
+      case 'locations':
+        alreadyExists = locations.includes(value);
+        break;
+      case 'connectivities':
+        alreadyExists = connectivities.includes(value);
+        break;
+      default:
+        return;
+    }
+    
+    // If the value already exists, don't add it again
+    if (alreadyExists) {
+      return;
+    }
+    
     // First update the local state
     switch (optionType) {
       case 'groups':
@@ -426,8 +353,52 @@ export default function UserTable({
         return;
     }
     
-    // Then save all options to the API
-    saveDropdownOptions();
+    // Then save the individual option to the API
+    try {
+      const response = await fetch('/api/dropdown-option', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fiscalYear,
+          optionType,
+          optionValue: value
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save dropdown option');
+      }
+      
+      const result = await response.json();
+      console.log(`Successfully added new ${optionType}: ${value}`, result);
+    } catch (error: any) {
+      console.error(`Failed to save ${optionType}: ${value}`, error);
+      alert(`Failed to save ${optionType}: ${error.message || 'Unknown error'}`);
+      // Revert the local state change if save failed
+      switch (optionType) {
+        case 'groups':
+          setGroups(prev => prev.filter(item => item !== value));
+          break;
+        case 'ppaMerchants':
+          setPpaMerchants(prev => prev.filter(item => item !== value));
+          break;
+        case 'types':
+          setTypes(prev => prev.filter(item => item !== value));
+          break;
+        case 'locationCodes':
+          setLocationCodes(prev => prev.filter(item => item !== value));
+          break;
+        case 'locations':
+          setLocations(prev => prev.filter(item => item !== value));
+          break;
+        case 'connectivities':
+          setConnectivities(prev => prev.filter(item => item !== value));
+          break;
+      }
+    }
   };
 
   // Save data to localStorage whenever data changes, separated by fiscal year
@@ -436,9 +407,19 @@ export default function UserTable({
       // Save to localStorage for backward compatibility
       localStorage.setItem(`tableData_${fiscalYear}`, JSON.stringify(data));
       
-      // Save to database
+      // Only save to database if data has been loaded from the database
+      // This prevents saving empty data on initial load
+      if (!dataLoaded) {
+        console.log(`Skipping database save for ${fiscalYear} - data not yet loaded from database`);
+        return;
+      }
+      
+      // Save to database - even empty data should be saved if it's a user action
+      // (dataLoaded is true means we've loaded data from DB, so any changes should be saved)
       const saveToDatabase = async () => {
         try {
+          console.log(`Saving data to database for fiscal year ${fiscalYear}:`, data);
+          
           // Validate data before sending to database
           const validatedData = data.map(row => ({
             id: row.id,
@@ -466,31 +447,32 @@ export default function UserTable({
           });
           
           if (!response.ok) {
-            console.error('Failed to save data to database:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('Failed to save data to database:', response.status, response.statusText, errorText);
+            // Show error to user
+            alert(`Failed to save data to database: ${response.status} ${response.statusText}`);
+          } else {
+            const result = await response.json();
+            console.log('Data saved successfully to database:', result);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error saving table data to database:', error);
+          // Show error to user
+          alert(`Error saving data to database: ${error.message || 'Unknown error'}`);
         }
       };
       
       saveToDatabase();
     }
-  }, [data, fiscalYear]);
+  }, [data, fiscalYear, dataLoaded]);
 
-  // Save dropdown options to localStorage
-  /*
+  // Save dropdown options and location relationships to database when they change
   useEffect(() => {
-    const options = {
-      groups,
-      ppaMerchants,
-      types,
-      locationCodes,
-      locations,
-      connectivities
-    };
-    localStorage.setItem('dropdownOptions', JSON.stringify(options));
-  }, [groups, ppaMerchants, types, locationCodes, locations, connectivities]);
-  */
+    if (fiscalYear) {
+      saveDropdownOptions();
+      saveLocationRelationships();
+    }
+  }, [groups, ppaMerchants, types, locationCodes, locations, connectivities, locationRelationships, fiscalYear]);
 
   // Filter data based on filter criteria (only dropdown filters)
   const filteredData = data.filter(row => {
@@ -504,20 +486,30 @@ export default function UserTable({
       (filters.connectivity === '' || row.connectivity === filters.connectivity)
     );
   });
+  
+  // Log filtered data for debugging
+  console.log('Data length:', data.length);
+  console.log('Filtered data length:', filteredData.length);
+  console.log('Filters:', filters);
+  console.log('First few data items:', data.slice(0, 3));
+  console.log('First few filtered data items:', filteredData.slice(0, 3));
 
   // Calculate sums for numeric columns
   const calculateSums = () => {
-    return filteredData.reduce((acc, row) => {
+    const sums = filteredData.reduce((acc, row) => {
       acc.capacity += row.capacity || 0;
       acc.solar += row.solar || 0;
       acc.wind += row.wind || 0;
       return acc;
     }, { capacity: 0, solar: 0, wind: 0 });
+    
+    console.log('Calculated sums:', sums);
+    return sums;
   };
 
   const sums = calculateSums();
 
-  const handleAddRow = () => {
+  const handleAddRow = async () => {
     // Check if user is authenticated
     if (!isAuthenticated) {
       alert('You need to be authenticated to add a new row.');
@@ -567,16 +559,22 @@ export default function UserTable({
     // The data will be automatically saved to both localStorage and database by the useEffect hook
   };
 
-  const handleDeleteRow = (id: number) => {
+  const handleDeleteRow = async (id: number) => {
     // Check if user is authenticated
     if (!isAuthenticated) {
       alert('You need to be authenticated to delete a row.');
       return;
     }
     
+    // Confirm deletion
+    if (!window.confirm('Are you sure you want to delete this row?')) {
+      return;
+    }
+    
     const updatedData = data.filter(row => row.id !== id);
     setData(updatedData);
     setOpenMenuId(null);
+    // The data will be automatically saved to both localStorage and database by the useEffect hook
   };
 
   const handleEditRow = (row: TableRow) => {
@@ -591,11 +589,25 @@ export default function UserTable({
     setOpenMenuId(null);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editRow) {
-      setData(data.map(row => row.id === editRow.id ? editRow : row));
+      // Validate required fields
+      if (!editRow.capacity || !editRow.group || !editRow.ppaMerchant || !editRow.type || 
+          !editRow.location || !editRow.locationCode || !editRow.pss || !editRow.connectivity) {
+        alert('Please fill in all required fields');
+        return;
+      }
+      
+      // For Hybrid type, ensure only wind value is used
+      const validatedEditRow = {
+        ...editRow,
+        ...(editRow.type === 'Hybrid' && { solar: null })
+      };
+      
+      setData(data.map(row => row.id === editRow.id ? validatedEditRow : row));
       setEditingId(null);
       setEditRow(null);
+      // The data will be automatically saved to both localStorage and database by the useEffect hook
     }
   };
 
@@ -881,14 +893,41 @@ export default function UserTable({
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={newRow.capacity || ''}
-                      onChange={(e) => handleInputChange('capacity', e.target.value ? parseFloat(e.target.value) : null)}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Enter capacity"
-                    />
+                  <input
+  type="text"
+  value={newRow.capacity ?? ""}
+  onChange={(e) => {
+    let val = e.target.value;
+
+    // Allow only digits and dot
+    val = val.replace(/[^0-9.]/g, "");
+
+    // Allow only one dot
+    val = val.replace(/(\..*)\./g, "$1");
+
+    // Limit to 2 decimal places
+    if (val.includes(".")) {
+      const [intPart, decPart] = val.split(".");
+      val = intPart + "." + decPart.slice(0, 2);
+    }
+
+    // Update raw value so decimals are not removed
+    handleInputChange("capacity", val || null);
+  }}
+  onBlur={() => {
+    // Convert to number only after user leaves field
+    if (newRow.capacity !== null && newRow.capacity !== undefined) {
+      const capacityStr = newRow.capacity.toString();
+      if (capacityStr !== "" && !isNaN(parseFloat(capacityStr))) {
+        handleInputChange("capacity", parseFloat(capacityStr));
+      }
+    }
+  }}
+  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+  placeholder="Enter capacity"
+/>
+
+
                   </div>
                 </div>
                 
@@ -998,6 +1037,8 @@ export default function UserTable({
                     const newRelationship = { location: value, locationCode: value };
                     setLocationRelationships(prev => [...prev, newRelationship]);
                     saveDropdownOption('locations', value);
+                    // Save location relationships to API
+                    saveLocationRelationships();
                   }}
                   placeholder="Select Location"
                 />
@@ -1092,115 +1133,123 @@ export default function UserTable({
           <table className="min-w-full border-separate border-spacing-0">
             <thead>
               <tr>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter sm:pl-6 lg:pl-8">
-                  S.No
-                </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  Capacity
-                </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  <div>Group</div>
-                  <div className="mt-1">
-                    <CustomDropdown
-                      options={['', ...groups]}
-                      value={filters.group}
-                      onChange={(value) => handleFilterChange('group', value)}
-                      onAddNew={(value) => {
-                        saveDropdownOption('groups', value);
-                        handleFilterChange('group', value);
-                      }}
-                      placeholder="All"
-                    />
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] py-3 pr-3 pl-4 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter sm:pl-6 lg:pl-8 align-top">S.No</th>
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top">Capacity</th>
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top w-32">
+                  <div className="flex flex-col">
+                    <span>Group</span>
+                    <div className="mt-1">
+                      <CustomDropdown
+                        options={['', ...groups]}
+                        value={filters.group}
+                        onChange={(value) => handleFilterChange('group', value)}
+                        onAddNew={(value) => {
+                          saveDropdownOption('groups', value);
+                          handleFilterChange('group', value);
+                        }}
+                        placeholder="All"
+                        className="w-full text-xs"
+                      />
+                    </div>
                   </div>
                 </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  <div>PPA/Merchant</div>
-                  <div className="mt-1">
-                    <CustomDropdown
-                      options={['', ...ppaMerchants]}
-                      value={filters.ppaMerchant}
-                      onChange={(value) => handleFilterChange('ppaMerchant', value)}
-                      onAddNew={(value) => {
-                        saveDropdownOption('ppaMerchants', value);
-                        handleFilterChange('ppaMerchant', value);
-                      }}
-                      placeholder="All"
-                    />
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top w-36">
+                  <div className="flex flex-col">
+                    <span>PPA/Merchant</span>
+                    <div className="mt-1">
+                      <CustomDropdown
+                        options={['', ...ppaMerchants]}
+                        value={filters.ppaMerchant}
+                        onChange={(value) => handleFilterChange('ppaMerchant', value)}
+                        onAddNew={(value) => {
+                          saveDropdownOption('ppaMerchants', value);
+                          handleFilterChange('ppaMerchant', value);
+                        }}
+                        placeholder="All"
+                        className="w-full text-xs"
+                      />
+                    </div>
                   </div>
                 </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  <div>Type</div>
-                  <div className="mt-1">
-                    <CustomDropdown
-                      options={['', ...types]}
-                      value={filters.type}
-                      onChange={(value) => handleFilterChange('type', value)}
-                      onAddNew={(value) => {
-                        saveDropdownOption('types', value);
-                        handleFilterChange('type', value);
-                      }}
-                      placeholder="All"
-                    />
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top w-28">
+                  <div className="flex flex-col">
+                    <span>Type</span>
+                    <div className="mt-1">
+                      <CustomDropdown
+                        options={['', ...types]}
+                        value={filters.type}
+                        onChange={(value) => handleFilterChange('type', value)}
+                        onAddNew={(value) => {
+                          saveDropdownOption('types', value);
+                          handleFilterChange('type', value);
+                        }}
+                        placeholder="All"
+                        className="w-full text-xs"
+                      />
+                    </div>
                   </div>
                 </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  Solar
-                </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  Wind
-                </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  SPV
-                </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  <div>Location Code</div>
-                  <div className="mt-1">
-                    <CustomDropdown
-                      options={['', ...locationCodes]}
-                      value={filters.locationCode}
-                      onChange={(value) => handleFilterChange('locationCode', value)}
-                      onAddNew={(value) => {
-                        saveDropdownOption('locationCodes', value);
-                        handleFilterChange('locationCode', value);
-                      }}
-                      placeholder="All"
-                    />
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top">Solar</th>
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top">Wind</th>
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top">SPV</th>
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top w-32">
+                  <div className="flex flex-col">
+                    <span>Location Code</span>
+                    <div className="mt-1">
+                      <CustomDropdown
+                        options={['', ...locationCodes]}
+                        value={filters.locationCode}
+                        onChange={(value) => handleFilterChange('locationCode', value)}
+                        onAddNew={(value) => {
+                          saveDropdownOption('locationCodes', value);
+                          handleFilterChange('locationCode', value);
+                        }}
+                        placeholder="All"
+                        className="w-full text-xs"
+                      />
+                    </div>
                   </div>
                 </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  <div>Location</div>
-                  <div className="mt-1">
-                    <CustomDropdown
-                      options={['', ...locations]}
-                      value={filters.location}
-                      onChange={(value) => handleFilterChange('location', value)}
-                      onAddNew={(value) => {
-                        // Also add to location relationships with a default location code
-                        const newRelationship = { location: value, locationCode: value };
-                        setLocationRelationships(prev => [...prev, newRelationship]);
-                        saveDropdownOption('locations', value);
-                        handleFilterChange('location', value);
-                      }}
-                      placeholder="All"
-                    />
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top w-32">
+                  <div className="flex flex-col">
+                    <span>Location</span>
+                    <div className="mt-1">
+                      <CustomDropdown
+                        options={['', ...locations]}
+                        value={filters.location}
+                        onChange={(value) => handleFilterChange('location', value)}
+                        onAddNew={(value) => {
+                          // Also add to location relationships with a default location code
+                          const newRelationship = { location: value, locationCode: value };
+                          setLocationRelationships(prev => [...prev, newRelationship]);
+                          saveDropdownOption('locations', value);
+                          handleFilterChange('location', value);
+                          // Save location relationships to API
+                          saveLocationRelationships();
+                        }}
+                        placeholder="All"
+                        className="w-full text-xs"
+                      />
+                    </div>
                   </div>
                 </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  PSS
-                </th>
-                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
-                  <div>Connectivity</div>
-                  <div className="mt-1">
-                    <CustomDropdown
-                      options={['', ...connectivities]}
-                      value={filters.connectivity}
-                      onChange={(value) => handleFilterChange('connectivity', value)}
-                      onAddNew={(value) => {
-                        saveDropdownOption('connectivities', value);
-                        handleFilterChange('connectivity', value);
-                      }}
-                      placeholder="All"
-                    />
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top">PSS</th>
+                <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3 text-left text-sm font-bold text-foreground dark:text-white backdrop-blur-sm backdrop-filter align-top w-32">
+                  <div className="flex flex-col">
+                    <span>Connectivity</span>
+                    <div className="mt-1">
+                      <CustomDropdown
+                        options={['', ...connectivities]}
+                        value={filters.connectivity}
+                        onChange={(value) => handleFilterChange('connectivity', value)}
+                        onAddNew={(value) => {
+                          saveDropdownOption('connectivities', value);
+                          handleFilterChange('connectivity', value);
+                        }}
+                        placeholder="All"
+                        className="w-full text-xs"
+                      />
+                    </div>
                   </div>
                 </th>
                 <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] py-3.5 pl-3 pr-4 backdrop-blur-sm backdrop-filter sm:pr-6 lg:pr-8">
@@ -1320,6 +1369,8 @@ export default function UserTable({
                             setLocationRelationships(prev => [...prev, newRelationship]);
                             saveDropdownOption('locations', value);
                             handleEditInputChange('location', value);
+                            // Save location relationships to API
+                            saveLocationRelationships();
                           }}
                           placeholder="Select Location"
                         />
@@ -1454,6 +1505,14 @@ export default function UserTable({
                   )}
                 </tr>
               ))}
+              {/* Show message when no data is available */}
+              {filteredData.length === 0 && (
+                <tr>
+                  <td colSpan={13} className="py-4 text-center text-foreground dark:text-white">
+                    No data available for the selected filters.
+                  </td>
+                </tr>
+              )}
               {/* Total row */}
               <tr className="bg-table-header dark:bg-[#171717] font-semibold">
                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-foreground dark:text-white sm:pl-6 lg:pl-8">

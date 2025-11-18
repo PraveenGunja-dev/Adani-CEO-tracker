@@ -20,18 +20,43 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## MongoDB Setup
+## SQLite Database
 
-This project includes MongoDB integration for user authentication and variable storage.
+This project uses SQLite for data storage, which is automatically initialized when the application starts. The database file is located at `data/adani-excel.db`.
 
-1. Install MongoDB locally or use MongoDB Atlas
-2. Update the `MONGODB_URI` and `MONGODB_DB` in `.env.local` with your database connection string
-3. The application will automatically connect to MongoDB when needed
+No additional setup is required - the application will automatically create the database and tables when needed.
 
-For MongoDB Atlas, your connection string will look like:
+## Data Import
+
+To import the default data into the database, use the following API endpoint:
+
+```bash
+curl -X POST http://localhost:3000/api/import-default-data
 ```
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/adani-excel
-```
+
+This will import data for all fiscal years (FY_23, FY_24, FY_25) from the JSON files in the components directory.
+
+## DataTable Component
+
+This project includes two implementations of the DataTable component:
+
+1. `DataTable` - The original implementation
+2. `NewDataTable` - A completely rewritten implementation with improved features
+
+Both components can be used to display tabular data with filtering capabilities. The new implementation includes:
+
+- Better loading states and error handling
+- Enhanced filtering capabilities
+- Improved responsive design
+- Data summary and totals row
+- Proper TypeScript support
+
+## Test Pages
+
+To test the DataTable components, visit:
+
+- [http://localhost:3000/datatable-test](http://localhost:3000/datatable-test) - Compare old and new implementations
+- [http://localhost:3000/new-datatable-test](http://localhost:3000/new-datatable-test) - Test the new implementation
 
 ## Learn More
 
@@ -46,4 +71,4 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details."# Adani-CEO-tracker" 
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

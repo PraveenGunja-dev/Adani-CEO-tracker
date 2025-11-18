@@ -1,9 +1,19 @@
-import { connectToDatabase } from './mongodb';
+import { db } from './sqlite';
 import bcrypt from 'bcrypt';
-import { ObjectId } from 'mongodb';
+
+// Initialize users table if it doesn't exist
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
 
 export interface User {
-  _id?: ObjectId;
+  id: number;
   username: string;
   email: string;
   password: string;
@@ -11,12 +21,9 @@ export interface User {
 }
 
 export async function createUser(username: string, email: string, password: string) {
-  const { db } = await connectToDatabase();
-  
   // Check if user already exists
-  const existingUser = await db.collection('users').findOne({ 
-    $or: [{ email }, { username }] 
-  });
+  const checkStmt = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?');
+  const existingUser = checkStmt.get(email, username);
   
   if (existingUser) {
     throw new Error('User with this email or username already exists');
@@ -25,24 +32,25 @@ export async function createUser(username: string, email: string, password: stri
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
   
-  // Create user object (without _id, let MongoDB generate it)
-  const user = {
+  // Insert user into database
+  const insertStmt = db.prepare(
+    'INSERT INTO users (username, email, password) VALUES (?, ?, ?)'
+  );
+  const result = insertStmt.run(username, email, hashedPassword);
+  
+  return {
+    id: result.lastInsertRowid as number,
     username,
     email,
     password: hashedPassword,
     createdAt: new Date()
   };
-  
-  // Insert user into database
-  const result = await db.collection('users').insertOne(user);
-  return { ...user, _id: result.insertedId };
 }
 
 export async function authenticateUser(email: string, password: string) {
-  const { db } = await connectToDatabase();
-  
   // Find user by email
-  const user = await db.collection('users').findOne({ email });
+  const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
+  const user: any = stmt.get(email);
   
   if (!user) {
     throw new Error('User not found');
@@ -61,9 +69,8 @@ export async function authenticateUser(email: string, password: string) {
 }
 
 export async function getUserById(id: string) {
-  const { db } = await connectToDatabase();
-  
-  const user = await db.collection('users').findOne({ _id: new ObjectId(id) });
+  const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
+  const user: any = stmt.get(id);
   
   if (!user) {
     throw new Error('User not found');

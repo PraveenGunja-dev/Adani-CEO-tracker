@@ -1,27 +1,26 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { db } from '@/lib/sqlite';
 
 export async function GET() {
   try {
-    const { db } = await connectToDatabase();
+    // Test the connection by running a simple query
+    const stmt = db.prepare('SELECT 1');
+    const result = stmt.get();
     
-    // Test the connection by running a simple command
-    const stats = await db.command({ ping: 1 });
-    
-    if (stats.ok === 1) {
+    if (result) {
       return NextResponse.json({ 
         status: 'ok', 
-        message: 'MongoDB connection successful',
+        message: 'SQLite connection successful',
         timestamp: new Date().toISOString()
       }, { status: 200 });
     } else {
       return NextResponse.json({ 
         status: 'error', 
-        message: 'MongoDB ping failed'
+        message: 'SQLite query failed'
       }, { status: 500 });
     }
   } catch (error: any) {
-    console.error('MongoDB connection error:', error);
+    console.error('SQLite connection error:', error);
     return NextResponse.json({ 
       status: 'error', 
       message: error.message || 'Internal server error'

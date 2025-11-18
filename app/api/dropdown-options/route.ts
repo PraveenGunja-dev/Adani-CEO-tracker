@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { connectToDatabase } from '@/lib/sqlite-adapter';
 
 // Define the structure for dropdown options
 interface DropdownOptions {
+  fiscalYear?: string;
   groups: string[];
   ppaMerchants: string[];
   types: string[];
@@ -13,20 +13,22 @@ interface DropdownOptions {
 }
 
 // GET /api/dropdown-options - Get all dropdown options
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const fiscalYear = searchParams.get('fiscalYear') || 'FY_25'; // Default to FY_25
+    
     const { db } = await connectToDatabase();
     
-    // Get the dropdown options document
-    const options = await db.collection('dropdownOptions').findOne({});
+    // Get the dropdown options document for the specific fiscal year
+    const options = await db.collection('dropdownOptions').findOne({ fiscalYear });
     
     if (options) {
-      // Remove MongoDB _id field before returning
-      const { _id, ...optionsWithoutId } = options;
-      return NextResponse.json(optionsWithoutId, { status: 200 });
+      // For SQLite implementation, options are already in the correct format
+      return NextResponse.json(options, { status: 200 });
     } else {
       // Return default options if none exist
-      const defaultOptions: DropdownOptions = {
+      const defaultOptions: Omit<DropdownOptions, 'fiscalYear'> = {
         groups: ['AGEL', 'ACL'],
         ppaMerchants: ['PPA', 'Merchant'],
         types: ['Solar', 'Wind', 'Hybrid'],
@@ -49,6 +51,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const options: DropdownOptions = await request.json();
+    const { fiscalYear = 'FY_25', ...dropdownOptions } = options;
     
     // Log the incoming options for debugging
     console.log('Received dropdown options:', options);
@@ -66,54 +69,33 @@ export async function POST(request: Request) {
     // Log database connection for debugging
     console.log('Connected to database');
     
-    // First, try to find an existing document
-    const existingDoc = await db.collection('dropdownOptions').findOne({});
+    // Update or insert dropdown options for the specific fiscal year
+    const result: any = await db.collection('dropdownOptions').updateOne(
+      { fiscalYear },
+      { 
+        $set: { 
+          fiscalYear,
+          ...dropdownOptions,
+          updatedAt: new Date()
+        }
+      },
+      { upsert: true }
+    );
     
-    // Log existing document for debugging
-    console.log('Existing document:', existingDoc);
+    // Log update result for debugging
+    console.log('Update result:', result);
     
-    if (existingDoc) {
-      // Update existing document
-      const result = await db.collection('dropdownOptions').updateOne(
-        { _id: existingDoc._id },
-        { $set: { ...options, updatedAt: new Date() } }
-      );
-      
-      // Log update result for debugging
-      console.log('Update result:', result);
-      
-      if (result.modifiedCount > 0) {
-        return NextResponse.json(options, { status: 200 });
-      } else {
-        return NextResponse.json(
-          { error: 'Failed to update dropdown options' },
-          { status: 500 }
-        );
-      }
+    // Check if the operation was successful
+    const success = (result.modifiedCount !== undefined && result.modifiedCount >= 0) || 
+                   (result.upsertedCount !== undefined && result.upsertedCount >= 0);
+    
+    if (success) {
+      return NextResponse.json(dropdownOptions, { status: 200 });
     } else {
-      // Insert new document
-      const newDoc = {
-        ...options,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      // Log new document for debugging
-      console.log('New document to insert:', newDoc);
-      
-      const result = await db.collection('dropdownOptions').insertOne(newDoc);
-      
-      // Log insert result for debugging
-      console.log('Insert result:', result);
-      
-      if (result.insertedId) {
-        return NextResponse.json(options, { status: 200 });
-      } else {
-        return NextResponse.json(
-          { error: 'Failed to insert dropdown options' },
-          { status: 500 }
-        );
-      }
+      return NextResponse.json(
+        { error: 'Failed to update dropdown options' },
+        { status: 500 }
+      );
     }
   } catch (error: any) {
     console.error('Error updating dropdown options:', error);

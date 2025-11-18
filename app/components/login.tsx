@@ -16,8 +16,8 @@ const ShuffleHero = () => {
           />
         </div>
         
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mt-8 mb-6">
-          CEO tracker
+        <h1 className="text-4xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mt-8 mb-6">
+          Asset Commenting
         </h1>
       </div>
       <ShuffleGrid />

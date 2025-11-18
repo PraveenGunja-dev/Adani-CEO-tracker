@@ -50,7 +50,7 @@ export default function VariableManager() {
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">MongoDB Variable Manager</h2>
+      <h2 className="text-xl font-bold mb-4">SQLite Variable Manager</h2>
       
       {/* Auth Section */}
       <div className="mb-8 p-4 border rounded">

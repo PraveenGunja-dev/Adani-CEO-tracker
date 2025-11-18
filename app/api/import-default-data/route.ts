@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/sqlite-adapter';
+
+// Import the fiscal year data files
 import exDataFY23 from '@/app/components/ex.json';
 import exDataFY24 from '@/app/components/ex_fy25.json';
 import exDataFY25 from '@/app/components/ex_fy26.json';
-import exDataFY26 from '@/app/components/ex_fy27.json';
-import exDataFY27 from '@/app/components/ex_fy28.json';
 
 // Convert fiscal year data to table row format
 const convertToTableRow = (item: any, index: number) => {
@@ -38,8 +38,8 @@ const convertToTableRow = (item: any, index: number) => {
   };
 };
 
-// POST /api/import-data - Import all fiscal year data into the database
-export async function POST(request: Request) {
+// POST /api/import-default-data - Import default fiscal year data into the database
+export async function POST() {
   try {
     const { db } = await connectToDatabase();
     
@@ -47,9 +47,7 @@ export async function POST(request: Request) {
     const fiscalYears = [
       { name: 'FY_23', data: exDataFY23 },  // FY_23 should use ex.json data (84 records)
       { name: 'FY_24', data: exDataFY24 },  // FY_24 should use ex_fy25.json data (32 records)
-      { name: 'FY_25', data: exDataFY25 },  // FY_25 should use ex_fy26.json data (41 records)
-      { name: 'FY_26', data: exDataFY26 },  // FY_26 should be empty
-      { name: 'FY_27', data: exDataFY27 }   // FY_27 should be empty
+      { name: 'FY_25', data: exDataFY25 }   // FY_25 should use ex_fy26.json data (41 records)
     ];
     
     const results = [];
@@ -64,7 +62,7 @@ export async function POST(request: Request) {
         continue;
       }
       
-      // Insert data into database
+      // Save to database
       const result = await db.collection('tableData').updateOne(
         { fiscalYear: fy.name },
         { 
@@ -86,7 +84,10 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json(
-      { message: 'All fiscal year data imported successfully', results },
+      { 
+        message: 'All fiscal year data imported successfully',
+        results
+      },
       { status: 200 }
     );
   } catch (error: any) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/sqlite-adapter';
 
 // Define the structure for location relationships
 interface LocationRelationship {
@@ -8,12 +8,15 @@ interface LocationRelationship {
 }
 
 // GET /api/location-relationships - Get all location relationships
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const fiscalYear = searchParams.get('fiscalYear') || 'FY_25'; // Default to FY_25
+    
     const { db } = await connectToDatabase();
     
-    // Get the location relationships document
-    const relationshipsDoc = await db.collection('locationRelationships').findOne({});
+    // Get the location relationships document for the specific fiscal year
+    const relationshipsDoc = await db.collection('locationRelationships').findOne({ fiscalYear });
     
     if (relationshipsDoc && relationshipsDoc.relationships) {
       return NextResponse.json(relationshipsDoc.relationships, { status: 200 });
@@ -38,6 +41,9 @@ export async function GET() {
 // POST /api/location-relationships - Update location relationships
 export async function POST(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const fiscalYear = searchParams.get('fiscalYear') || 'FY_25'; // Default to FY_25
+    
     const relationships: LocationRelationship[] = await request.json();
     
     // Validate input
@@ -50,18 +56,14 @@ export async function POST(request: Request) {
     
     const { db } = await connectToDatabase();
     
-    // Update or insert the location relationships document
-    const result = await db.collection('locationRelationships').findOneAndUpdate(
-      {}, // Find any document (there should only be one)
-      { $set: { relationships, updatedAt: new Date() } },
-      { upsert: true, returnDocument: 'after' }
+    // Update or insert the location relationships document for the specific fiscal year
+    const result = await db.collection('locationRelationships').updateOne(
+      { fiscalYear },
+      { $set: { fiscalYear, relationships, updatedAt: new Date() } },
+      { upsert: true }
     );
     
-    if (result.value) {
-      return NextResponse.json(relationships, { status: 200 });
-    } else {
-      return NextResponse.json(relationships, { status: 200 });
-    }
+    return NextResponse.json(relationships, { status: 200 });
   } catch (error: any) {
     console.error('Error updating location relationships:', error);
     return NextResponse.json(

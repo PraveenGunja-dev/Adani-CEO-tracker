@@ -22,7 +22,7 @@ interface LocationRelationship {
 export default function MasterDataTable() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [fiscalYear, setFiscalYear] = useState('FY_24');
+  const [fiscalYear, setFiscalYear] = useState('FY_23');
   
   // State for dropdown management
   const [dropdownOptions, setDropdownOptions] = useState<DropdownOptions>({
@@ -69,7 +69,7 @@ export default function MasterDataTable() {
     relationship: LocationRelationship;
   } | null>(null);
 
-  // Load dropdown options and location relationships from MongoDB
+  // Load dropdown options and location relationships from SQLite
   useEffect(() => {
     const loadMasterData = async () => {
       try {
@@ -109,7 +109,7 @@ export default function MasterDataTable() {
     loadMasterData();
   }, []);
 
-  // Save dropdown options and location relationships to MongoDB
+  // Save dropdown options and location relationships to SQLite
   useEffect(() => {
     const saveMasterData = async () => {
       try {
