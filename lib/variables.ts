@@ -1,21 +1,6 @@
 import { db } from './sqlite';
 
-// Initialize variables table if it doesn't exist
-db.exec(`
-  CREATE TABLE IF NOT EXISTS variables (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    key TEXT NOT NULL,
-    value TEXT,
-    user_id TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
-
-// Create index for better performance
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_variables_key_user ON variables(key, user_id)
-`);
+// Variables table should be initialized in lib/sqlite.ts
 
 export interface Variable {
   id: number;
@@ -34,51 +19,47 @@ export async function setVariable(key: string, value: any, userId?: string) {
     createdAt: new Date(),
     updatedAt: new Date()
   };
-  
+
   // Check if variable exists
-  const checkStmt = db.prepare('SELECT id FROM variables WHERE key = ? AND user_id IS ?');
-  const existing = checkStmt.get(key, userId || null);
-  
+  const existing = await db.get('SELECT id FROM variables WHERE key = ? AND user_id IS ?', [key, userId || null]);
+
   if (existing) {
     // Update existing variable
-    const updateStmt = db.prepare(
-      'UPDATE variables SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ? AND user_id IS ?'
+    const result = await db.run(
+      'UPDATE variables SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE key = ? AND user_id IS ?',
+      [JSON.stringify(value), key, userId || null]
     );
-    const result = updateStmt.run(JSON.stringify(value), key, userId || null);
     return { modifiedCount: result.changes };
   } else {
     // Insert new variable
-    const insertStmt = db.prepare(
-      'INSERT INTO variables (key, value, user_id) VALUES (?, ?, ?)'
+    const result = await db.run(
+      'INSERT INTO variables (key, value, user_id) VALUES (?, ?, ?)',
+      [key, JSON.stringify(value), userId || null]
     );
-    const result = insertStmt.run(key, JSON.stringify(value), userId || null);
-    return { insertedId: result.lastInsertRowid };
+    return { insertedId: result.lastID };
   }
 }
 
 export async function getVariable(key: string, userId?: string) {
-  const stmt = db.prepare('SELECT * FROM variables WHERE key = ? AND user_id IS ?');
-  const variable: any = stmt.get(key, userId || null);
-  
+  const variable: any = await db.get('SELECT * FROM variables WHERE key = ? AND user_id IS ?', [key, userId || null]);
+
   return variable ? JSON.parse(variable.value) : null;
 }
 
 export async function deleteVariable(key: string, userId?: string) {
-  const stmt = db.prepare('DELETE FROM variables WHERE key = ? AND user_id IS ?');
-  const result = stmt.run(key, userId || null);
-  
+  const result = await db.run('DELETE FROM variables WHERE key = ? AND user_id IS ?', [key, userId || null]);
+
   return result.changes > 0;
 }
 
 export async function getAllVariables(userId?: string) {
-  const stmt = db.prepare('SELECT * FROM variables WHERE user_id IS ?');
-  const variables: any[] = stmt.all(userId || null);
-  
+  const variables: any[] = await db.all('SELECT * FROM variables WHERE user_id IS ?', [userId || null]);
+
   // Convert to key-value pairs
   const result: Record<string, any> = {};
   variables.forEach(variable => {
     result[variable.key] = JSON.parse(variable.value);
   });
-  
+
   return result;
 }

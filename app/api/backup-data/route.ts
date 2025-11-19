@@ -7,24 +7,23 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const fiscalYear = searchParams.get('fiscalYear') || 'FY_25';
-    
+
     // Get all versions of data for the fiscal year
-    const stmt = db.prepare(`
+    const results: any[] = await db.all(`
       SELECT id, fiscal_year, data, version, is_deleted, created_at, updated_at 
       FROM table_data 
       WHERE fiscal_year = ? 
       ORDER BY version DESC
-    `);
-    const results: any[] = stmt.all(fiscalYear);
-    
+    `, [fiscalYear]);
+
     // Parse JSON data
     const backups = results.map(row => ({
       ...row,
       data: JSON.parse(row.data)
     }));
-    
+
     return NextResponse.json(
-      { 
+      {
         fiscalYear,
         backups,
         count: backups.length
@@ -44,35 +43,34 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const { fiscalYear, version } = await request.json();
-    
+
     if (!fiscalYear || !version) {
       return NextResponse.json(
         { error: 'fiscalYear and version are required' },
         { status: 400 }
       );
     }
-    
+
     // Get the specific version of data
-    const stmt = db.prepare(`
+    const result: any = await db.get(`
       SELECT data 
       FROM table_data 
       WHERE fiscal_year = ? AND version = ?
-    `);
-    const result: any = stmt.get(fiscalYear, version);
-    
+    `, [fiscalYear, version]);
+
     if (!result) {
       return NextResponse.json(
         { error: 'Backup not found' },
         { status: 404 }
       );
     }
-    
+
     // Restore the data by updating the current version
     const { db: mongoDb } = await connectToDatabase();
     const restoreResult = await mongoDb.collection('tableData').updateOne(
       { fiscalYear },
-      { 
-        $set: { 
+      {
+        $set: {
           fiscalYear,
           data: JSON.parse(result.data),
           updatedAt: new Date()
@@ -80,7 +78,7 @@ export async function POST(request: Request) {
       },
       { upsert: true }
     );
-    
+
     return NextResponse.json(
       { message: 'Data restored successfully' },
       { status: 200 }
@@ -100,21 +98,20 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const fiscalYear = searchParams.get('fiscalYear');
     const version = searchParams.get('version');
-    
+
     if (!fiscalYear || !version) {
       return NextResponse.json(
         { error: 'fiscalYear and version are required' },
         { status: 400 }
       );
     }
-    
+
     // Hard delete a specific version (only for backups)
-    const stmt = db.prepare(`
+    const result = await db.run(`
       DELETE FROM table_data 
       WHERE fiscal_year = ? AND version = ? AND is_deleted = TRUE
-    `);
-    const result = stmt.run(fiscalYear, version);
-    
+    `, [fiscalYear, version]);
+
     if (result.changes > 0) {
       return NextResponse.json(
         { message: 'Backup version deleted successfully' },
