@@ -224,7 +224,7 @@ export default function EnhancedDataTable({
 
     // Save to database
     try {
-      const response = await fetch(`${API_BASE_URL}/table-data', {
+      const response = await fetch(`${API_BASE_URL}/table-data`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,7 +232,7 @@ export default function EnhancedDataTable({
         },
         body: JSON.stringify({ fiscalYear, data: updatedData }),
       });
-      
+
       if (!response.ok) {
         console.error('Failed to save data to database:', response.status, response.statusText);
         alert('Failed to save changes to database');
@@ -267,7 +267,7 @@ export default function EnhancedDataTable({
     
     // Save to database
     try {
-      const response = await fetch(`${ API_BASE_URL } / table - data', {
+      const response = await fetch(`${API_BASE_URL}/table-data`, {
         method: 'POST',
         headers: {
         'Content-Type': 'application/json',
