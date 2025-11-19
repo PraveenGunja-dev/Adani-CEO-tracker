@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import CustomDropdown from './CustomDropdown';
+import { API_BASE_URL } from '@/lib/config';
 
 // Define the structure for table rows
 interface TableRow {
@@ -30,7 +31,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
   const [filteredData, setFilteredData] = useState<TableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // State for dropdown options
   const [groups, setGroups] = useState<string[]>(['AGEL', 'ACL']);
   const [ppaMerchants, setPpaMerchants] = useState<string[]>(['PPA', 'Merchant']);
@@ -53,7 +54,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
   useEffect(() => {
     const loadDropdownOptions = async () => {
       try {
-        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
+        const response = await fetch(`${API_BASE_URL}/dropdown-options?fiscalYear=${fiscalYear}`);
         if (response.ok) {
           const options = await response.json();
           setGroups(Array.isArray(options.groups) ? options.groups : ['AGEL', 'ACL']);
@@ -77,11 +78,11 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
       try {
         setLoading(true);
         setError(null);
-        
+
         console.log('Loading data for fiscal year:', fiscalYear);
-        
+
         // Try to load from database
-        const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`, {
+        const response = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache'
@@ -89,11 +90,11 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
         });
 
         console.log('API response status:', response.status);
-        
+
         if (response.ok) {
           const result = await response.json();
           console.log('API response data:', result);
-          
+
           // Use database data with correct field mapping
           const validatedData = result.data.map((row: any, index: number) => ({
             id: row.id || index + 1,
@@ -133,7 +134,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
   useEffect(() => {
     console.log('Applying filters:', filters);
     console.log('Data to filter:', data);
-    
+
     const filtered = data.filter(row => {
       return (
         (filters.group === '' || row.group === filters.group) &&
@@ -144,7 +145,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
         (filters.connectivity === '' || row.connectivity === filters.connectivity)
       );
     });
-    
+
     console.log('Filtered data:', filtered);
     setFilteredData(filtered);
   }, [data, filters]);
@@ -202,7 +203,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
               placeholder="All Groups"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-foreground dark:text-white mb-1">PPA/Merchant</label>
             <CustomDropdown
@@ -212,7 +213,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
               placeholder="All PPA/Merchant"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Type</label>
             <CustomDropdown
@@ -222,7 +223,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
               placeholder="All Types"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Location Code</label>
             <CustomDropdown
@@ -232,7 +233,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
               placeholder="All Location Codes"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Location</label>
             <CustomDropdown
@@ -242,7 +243,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
               placeholder="All Locations"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Connectivity</label>
             <CustomDropdown
@@ -253,7 +254,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
             />
           </div>
         </div>
-        
+
         {/* Data Summary */}
         <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <p className="text-sm text-foreground dark:text-white">
@@ -263,7 +264,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
             Fiscal Year: <span className="font-semibold">{fiscalYear}</span>
           </p>
         </div>
-        
+
         {/* Data Table */}
         <table className="min-w-full border-separate border-spacing-0">
           <thead>
@@ -308,8 +309,8 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
           </thead>
           <tbody className="divide-y divide-table-border dark:divide-gray-700 bg-card-background dark:bg-[#171717]">
             {filteredData.map((row, index) => (
-              <tr 
-                key={row.id} 
+              <tr
+                key={row.id}
                 className={index % 2 === 0 ? 'bg-card-background dark:bg-[#171717]' : 'bg-table-row-hover dark:bg-gray-800'}
               >
                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-foreground dark:text-white sm:pl-6 lg:pl-8">
@@ -350,7 +351,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
                 </td>
               </tr>
             ))}
-            
+
             {/* Total row */}
             {filteredData.length > 0 && (
               <tr className="bg-table-header dark:bg-[#171717] font-semibold">
@@ -378,7 +379,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
             )}
           </tbody>
         </table>
-        
+
         {filteredData.length === 0 && (
           <div className="text-center py-10">
             <p className="text-foreground dark:text-white">No data found matching the current filters.</p>

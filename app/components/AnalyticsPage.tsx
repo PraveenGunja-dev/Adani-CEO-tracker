@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { API_BASE_URL } from '@/lib/config';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -105,7 +106,7 @@ export default function AnalyticsPage() {
     const loadMasterData = async () => {
       try {
         // Load dropdown options
-        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
+        const response = await fetch(`${API_BASE_URL}/dropdown-options?fiscalYear=${fiscalYear}`);
         if (response.ok) {
           const options = await response.json();
           // Ensure all options are arrays
@@ -118,9 +119,9 @@ export default function AnalyticsPage() {
         } else {
           console.error('Failed to load dropdown options:', response.status, response.statusText);
         }
-        
+
         // Load location relationships
-        const relResponse = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`);
+        const relResponse = await fetch(`${API_BASE_URL}/location-relationships?fiscalYear=${fiscalYear}`);
         if (relResponse.ok) {
           const relationships = await relResponse.json();
           if (Array.isArray(relationships) && relationships.length > 0) {
@@ -131,14 +132,14 @@ export default function AnalyticsPage() {
         console.error('Error loading master data:', error.message || error);
       }
     };
-    
+
     loadMasterData();
   }, [fiscalYear]);
 
   // Function to save all dropdown options to API
   const saveDropdownOptions = async () => {
     try {
-      const response = await fetch('/api/dropdown-options', {
+      const response = await fetch(`${API_BASE_URL}/dropdown-options', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +157,7 @@ export default function AnalyticsPage() {
       
       if (!response.ok) {
         console.error('Failed to save dropdown options:', response.status, response.statusText);
-        throw new Error(`Failed to save dropdown options: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to save dropdown options: ${ response.status } ${ response.statusText }`);
       }
       
       const result = await response.json();
@@ -171,7 +172,7 @@ export default function AnalyticsPage() {
   // Function to save location relationships to API
   const saveLocationRelationships = async () => {
     try {
-      const response = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`, {
+      const response = await fetch(`${ API_BASE_URL } / location - relationships ? fiscalYear = ${ fiscalYear }`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -253,90 +254,90 @@ export default function AnalyticsPage() {
     
     // Then save the individual option to the API
     try {
-      const response = await fetch('/api/dropdown-option', {
+      const response = await fetch(`${ API_BASE_URL } / dropdown - option', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-        },
+        'Content-Type': 'application/json',
+      },
         body: JSON.stringify({
           fiscalYear,
           optionType,
           optionValue: value
         })
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save dropdown option');
-      }
-      
-      const result = await response.json();
-      console.log(`Successfully added new ${optionType}: ${value}`, result);
-    } catch (error: any) {
-      console.error(`Failed to save ${optionType}: ${value}`, error);
-      alert(`Failed to save ${optionType}: ${error.message || 'Unknown error'}`);
-      // Revert the local state change if save failed
-      switch (optionType) {
-        case 'groups':
-          setGroups(prev => prev.filter(item => item !== value));
-          break;
-        case 'ppaMerchants':
-          setPpaMerchants(prev => prev.filter(item => item !== value));
-          break;
-        case 'types':
-          setTypes(prev => prev.filter(item => item !== value));
-          break;
-        case 'locationCodes':
-          setLocationCodes(prev => prev.filter(item => item !== value));
-          break;
-        case 'locations':
-          setLocations(prev => prev.filter(item => item !== value));
-          break;
-        case 'connectivities':
-          setConnectivities(prev => prev.filter(item => item !== value));
-          break;
-      }
-    }
-  };
 
-  // Handle edit row
-  const handleEditRow = (row: TableRow) => {
-    if (!user) {
-      alert('You need to be authenticated to edit a row.');
-      return;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to save dropdown option');
     }
-    
-    setEditingId(row.id);
-    setEditRow({...row});
-    setOpenMenuId(null); // Close the menu when editing
-  };
 
-  // Handle delete row
-  const handleDeleteRow = async (id: number) => {
-    if (!user) {
-      alert('You need to be authenticated to delete a row.');
-      return;
+    const result = await response.json();
+    console.log(`Successfully added new ${optionType}: ${value}`, result);
+  } catch (error: any) {
+    console.error(`Failed to save ${optionType}: ${value}`, error);
+    alert(`Failed to save ${optionType}: ${error.message || 'Unknown error'}`);
+    // Revert the local state change if save failed
+    switch (optionType) {
+      case 'groups':
+        setGroups(prev => prev.filter(item => item !== value));
+        break;
+      case 'ppaMerchants':
+        setPpaMerchants(prev => prev.filter(item => item !== value));
+        break;
+      case 'types':
+        setTypes(prev => prev.filter(item => item !== value));
+        break;
+      case 'locationCodes':
+        setLocationCodes(prev => prev.filter(item => item !== value));
+        break;
+      case 'locations':
+        setLocations(prev => prev.filter(item => item !== value));
+        break;
+      case 'connectivities':
+        setConnectivities(prev => prev.filter(item => item !== value));
+        break;
     }
-    
-    // Confirm deletion with a dialog
-    const confirmed = window.confirm('Are you sure you want to delete this row? This action cannot be undone.');
-    if (!confirmed) {
-      setOpenMenuId(null); // Close the menu
-      return;
-    }
-    
+  }
+};
+
+// Handle edit row
+const handleEditRow = (row: TableRow) => {
+  if (!user) {
+    alert('You need to be authenticated to edit a row.');
+    return;
+  }
+
+  setEditingId(row.id);
+  setEditRow({ ...row });
+  setOpenMenuId(null); // Close the menu when editing
+};
+
+// Handle delete row
+const handleDeleteRow = async (id: number) => {
+  if (!user) {
+    alert('You need to be authenticated to delete a row.');
+    return;
+  }
+
+  // Confirm deletion with a dialog
+  const confirmed = window.confirm('Are you sure you want to delete this row? This action cannot be undone.');
+  if (!confirmed) {
     setOpenMenuId(null); // Close the menu
-    
-    // Update the data in state
-    const updatedData = tableData.filter(row => row.id !== id);
-    setTableData(updatedData);
-    
-    // Save to database
-    // Only save to database if data has been loaded from the database
-    // This prevents saving empty data on initial load
-    if (dataLoaded) {
-      try {
-        const response = await fetch('/api/table-data', {
+    return;
+  }
+
+  setOpenMenuId(null); // Close the menu
+
+  // Update the data in state
+  const updatedData = tableData.filter(row => row.id !== id);
+  setTableData(updatedData);
+
+  // Save to database
+  // Only save to database if data has been loaded from the database
+  // This prevents saving empty data on initial load
+  if (dataLoaded) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-data', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -348,18 +349,18 @@ export default function AnalyticsPage() {
           console.error('Failed to save data to database:', response.status, response.statusText);
           alert('Failed to delete row from database');
           // Revert the change in UI if database update failed
-          const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
+          const originalData = await fetch(`${ API_BASE_URL } / table - data ? fiscalYear = ${ fiscalYear }`).then(res => res.json());
           setTableData(originalData.data);
         }
       } catch (error) {
         console.error('Error saving table data to database:', error);
         alert('Error deleting row from database');
         // Revert the change in UI if database update failed
-        const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
+        const originalData = await fetch(`${ API_BASE_URL } / table - data ? fiscalYear = ${ fiscalYear }`).then(res => res.json());
         setTableData(originalData.data);
       }
     } else {
-      console.log(`Skipping database save for ${fiscalYear} - data not yet loaded from database`);
+      console.log(`Skipping database save for ${ fiscalYear } - data not yet loaded from database`);
     }
   };
 
@@ -396,205 +397,205 @@ export default function AnalyticsPage() {
     // This prevents saving empty data on initial load
     if (dataLoaded) {
       try {
-        const response = await fetch('/api/table-data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const response = await fetch(`${ API_BASE_URL }/table-data', {
+      method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ fiscalYear, data: updatedData }),
+      body: JSON.stringify({ fiscalYear, data: updatedData }),
         });
-        
-        if (!response.ok) {
-          console.error('Failed to save data to database:', response.status, response.statusText);
-          alert('Failed to save changes to database');
-        }
-      } catch (error) {
-        console.error('Error saving table data to database:', error);
-        alert('Error saving changes to database');
-      }
-    } else {
-      console.log(`Skipping database save for ${fiscalYear} - data not yet loaded from database`);
+
+    if (!response.ok) {
+      console.error('Failed to save data to database:', response.status, response.statusText);
+      alert('Failed to save changes to database');
+    }
+  } catch (error) {
+    console.error('Error saving table data to database:', error);
+    alert('Error saving changes to database');
+  }
+} else {
+  console.log(`Skipping database save for ${fiscalYear} - data not yet loaded from database`);
     }
   };
 
-  // Handle cancel edit
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditRow(null);
-  };
+// Handle cancel edit
+const handleCancelEdit = () => {
+  setEditingId(null);
+  setEditRow(null);
+};
 
-  // Handle input change for edit row
-  const handleEditInputChange = (field: keyof TableRow, value: string | number | null) => {
-    if (editRow) {
-      // Clear solar when type is Wind and clear wind when type is Solar
-      // For Hybrid, use only wind value
-      if (field === 'type') {
-        if (value === 'Wind') {
-          setEditRow({
-            ...editRow,
-            type: value as string,
-            solar: null
-          });
-        } else if (value === 'Solar') {
-          setEditRow({
-            ...editRow,
-            type: value as string,
-            wind: null
-          });
-        } else if (value === 'Hybrid') {
-          setEditRow({
-            ...editRow,
-            type: value as string,
-            solar: null  // Clear solar for Hybrid type
-          });
-        } else {
-          setEditRow({
-            ...editRow,
-            type: value as string
-          });
-        }
+// Handle input change for edit row
+const handleEditInputChange = (field: keyof TableRow, value: string | number | null) => {
+  if (editRow) {
+    // Clear solar when type is Wind and clear wind when type is Solar
+    // For Hybrid, use only wind value
+    if (field === 'type') {
+      if (value === 'Wind') {
+        setEditRow({
+          ...editRow,
+          type: value as string,
+          solar: null
+        });
+      } else if (value === 'Solar') {
+        setEditRow({
+          ...editRow,
+          type: value as string,
+          wind: null
+        });
+      } else if (value === 'Hybrid') {
+        setEditRow({
+          ...editRow,
+          type: value as string,
+          solar: null  // Clear solar for Hybrid type
+        });
       } else {
         setEditRow({
           ...editRow,
-          [field]: value
+          type: value as string
         });
       }
-    }
-  };
-
-  // Toggle menu for row actions
-  const toggleMenu = (id: number, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOpenMenuId(openMenuId === id ? null : id);
-  };
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (openMenuId !== null) {
-        setOpenMenuId(null);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [openMenuId]);
-
-  // Handle form submission
-  const handleFormSubmit = () => {
-    setShowTracker(prev => !prev);
-  };
-
-  // Handle add new capacity button click
-  const handleAddNewCapacity = () => {
-    if (user) {
-      setShowTracker(true);
     } else {
-      // Redirect to login page with proper redirect URL
-      router.push('/login?redirect=/application#analytics');
+      setEditRow({
+        ...editRow,
+        [field]: value
+      });
+    }
+  }
+};
+
+// Toggle menu for row actions
+const toggleMenu = (id: number, e: React.MouseEvent) => {
+  e.stopPropagation();
+  setOpenMenuId(openMenuId === id ? null : id);
+};
+
+// Close menu when clicking outside
+useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (openMenuId !== null) {
+      setOpenMenuId(null);
     }
   };
 
-  // Check if we should show the tracker after login
-  useEffect(() => {
-    if (user && typeof window !== 'undefined') {
-      const shouldShowTracker = localStorage.getItem('showTrackerAfterLogin');
-      if (shouldShowTracker === 'true') {
-        setShowTracker(true);
-        localStorage.removeItem('showTrackerAfterLogin');
-      }
-    }
-  }, [user]);
+  document.addEventListener('click', handleClickOutside);
+  return () => {
+    document.removeEventListener('click', handleClickOutside);
+  };
+}, [openMenuId]);
 
-  // Also check on initial load
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const shouldShowTracker = localStorage.getItem('showTrackerAfterLogin');
-      if (shouldShowTracker === 'true' && user) {
-        setShowTracker(true);
-        localStorage.removeItem('showTrackerAfterLogin');
-      }
-    }
-  }, []);
+// Handle form submission
+const handleFormSubmit = () => {
+  setShowTracker(prev => !prev);
+};
 
-  // Fetch table data from API when fiscal year changes
-  useEffect(() => {
-    const fetchTableData = async () => {
-      try {
-        const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`);
-        if (response.ok) {
-          const result = await response.json();
-          setTableData(result.data || []);
-        } else {
-          console.error('Failed to fetch table data:', response.status, response.statusText);
-          setTableData([]);
-        }
-      } catch (error) {
-        console.error('Error fetching table data:', error);
+// Handle add new capacity button click
+const handleAddNewCapacity = () => {
+  if (user) {
+    setShowTracker(true);
+  } else {
+    // Redirect to login page with proper redirect URL
+    router.push('/login?redirect=/application#analytics');
+  }
+};
+
+// Check if we should show the tracker after login
+useEffect(() => {
+  if (user && typeof window !== 'undefined') {
+    const shouldShowTracker = localStorage.getItem('showTrackerAfterLogin');
+    if (shouldShowTracker === 'true') {
+      setShowTracker(true);
+      localStorage.removeItem('showTrackerAfterLogin');
+    }
+  }
+}, [user]);
+
+// Also check on initial load
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    const shouldShowTracker = localStorage.getItem('showTrackerAfterLogin');
+    if (shouldShowTracker === 'true' && user) {
+      setShowTracker(true);
+      localStorage.removeItem('showTrackerAfterLogin');
+    }
+  }
+}, []);
+
+// Fetch table data from API when fiscal year changes
+useEffect(() => {
+  const fetchTableData = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`);
+      if (response.ok) {
+        const result = await response.json();
+        setTableData(result.data || []);
+      } else {
+        console.error('Failed to fetch table data:', response.status, response.statusText);
         setTableData([]);
-      } finally {
-        // Mark data as loaded regardless of success or failure
-        setDataLoaded(true);
       }
-    };
-
-    fetchTableData();
-  }, [fiscalYear]);
-
-  // Handle adding a new row
-  const handleAddRow = async () => {
-    // Check if user is authenticated
-    if (!user) {
-      alert('You need to be authenticated to add a new row.');
-      return;
+    } catch (error) {
+      console.error('Error fetching table data:', error);
+      setTableData([]);
+    } finally {
+      // Mark data as loaded regardless of success or failure
+      setDataLoaded(true);
     }
+  };
 
-    // Validate required fields
-    if (!newRow.capacity || !newRow.group || !newRow.ppaMerchant || !newRow.type || 
-        !newRow.location || !newRow.locationCode || !newRow.pss || !newRow.connectivity) {
-      alert('Please fill in all required fields');
-      return;
-    }
+  fetchTableData();
+}, [fiscalYear]);
 
-    // Create a new row with proper ID and S.No
-    const nextId = tableData.length > 0 ? Math.max(...tableData.map(row => row.id)) + 1 : 1;
-    const nextSno = tableData.length > 0 ? Math.max(...tableData.map(row => row.sno)) + 1 : 1;
+// Handle adding a new row
+const handleAddRow = async () => {
+  // Check if user is authenticated
+  if (!user) {
+    alert('You need to be authenticated to add a new row.');
+    return;
+  }
 
-    const rowToAdd: TableRow = {
-      id: nextId,
-      sno: nextSno,
-      ...newRow,
-      // If type is Hybrid, use only wind value and clear solar
-      ...(newRow.type === 'Hybrid' && { solar: null })
-    };
+  // Validate required fields
+  if (!newRow.capacity || !newRow.group || !newRow.ppaMerchant || !newRow.type ||
+    !newRow.location || !newRow.locationCode || !newRow.pss || !newRow.connectivity) {
+    alert('Please fill in all required fields');
+    return;
+  }
 
-    // Add the new row to the table data
-    const updatedData = [...tableData, rowToAdd];
-    setTableData(updatedData);
+  // Create a new row with proper ID and S.No
+  const nextId = tableData.length > 0 ? Math.max(...tableData.map(row => row.id)) + 1 : 1;
+  const nextSno = tableData.length > 0 ? Math.max(...tableData.map(row => row.sno)) + 1 : 1;
 
-    // Reset new row
-    setNewRow({
-      capacity: null,
-      group: '',
-      ppaMerchant: '',
-      type: '',
-      solar: null,
-      wind: null,
-      spv: '',
-      locationCode: '',
-      location: '',
-      pss: '',
-      connectivity: ''
-    });
+  const rowToAdd: TableRow = {
+    id: nextId,
+    sno: nextSno,
+    ...newRow,
+    // If type is Hybrid, use only wind value and clear solar
+    ...(newRow.type === 'Hybrid' && { solar: null })
+  };
 
-    // Save to database
-    // Only save to database if data has been loaded from the database
-    // This prevents saving empty data on initial load
-    if (dataLoaded) {
-      try {
-        const response = await fetch('/api/table-data', {
+  // Add the new row to the table data
+  const updatedData = [...tableData, rowToAdd];
+  setTableData(updatedData);
+
+  // Reset new row
+  setNewRow({
+    capacity: null,
+    group: '',
+    ppaMerchant: '',
+    type: '',
+    solar: null,
+    wind: null,
+    spv: '',
+    locationCode: '',
+    location: '',
+    pss: '',
+    connectivity: ''
+  });
+
+  // Save to database
+  // Only save to database if data has been loaded from the database
+  // This prevents saving empty data on initial load
+  if (dataLoaded) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/table-data', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -605,17 +606,17 @@ export default function AnalyticsPage() {
         if (!response.ok) {
           const errorText = await response.text();
           console.error('Failed to save data to database:', response.status, response.statusText, errorText);
-          alert(`Failed to save data to database: ${response.status} ${response.statusText}`);
+          alert(`Failed to save data to database: ${ response.status } ${ response.statusText }`);
         } else {
           const result = await response.json();
           console.log('Data saved successfully to database:', result);
         }
       } catch (error: any) {
         console.error('Error saving table data to database:', error);
-        alert(`Error saving data to database: ${error.message || 'Unknown error'}`);
+        alert(`Error saving data to database: ${ error.message || 'Unknown error' }`);
       }
     } else {
-      console.log(`Skipping database save for ${fiscalYear} - data not yet loaded from database`);
+      console.log(`Skipping database save for ${ fiscalYear } - data not yet loaded from database`);
     }
 
     // Close the form
@@ -827,7 +828,7 @@ export default function AnalyticsPage() {
     XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
     
     // Export the workbook
-    XLSX.writeFile(workbook, `table-data-${fiscalYear}.xlsx`);
+    XLSX.writeFile(workbook, `table - data - ${ fiscalYear }.xlsx`);
   };
 
   return (
@@ -1149,7 +1150,7 @@ export default function AnalyticsPage() {
                       step="0.01"
                       value={newRow.solar || ''}
                       onChange={(e) => setNewRow({...newRow, solar: e.target.value ? parseFloat(e.target.value) : null})}
-                      className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${newRow.type === 'Wind' || newRow.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w - full pl - 10 pr - 3 py - 2 border border - gray - 300 rounded - lg focus: ring - 2 focus: ring - blue - 500 focus: border - blue - 500 dark: bg - gray - 700 dark: border - gray - 600 dark: text - white ${ newRow.type === 'Wind' || newRow.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : '' } `}
                       placeholder="Enter solar value"
                       disabled={newRow.type === 'Wind' || newRow.type === 'Hybrid'}
                     />
@@ -1171,7 +1172,7 @@ export default function AnalyticsPage() {
                       step="0.01"
                       value={newRow.wind || ''}
                       onChange={(e) => setNewRow({...newRow, wind: e.target.value ? parseFloat(e.target.value) : null})}
-                      className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${newRow.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`w - full pl - 10 pr - 3 py - 2 border border - gray - 300 rounded - lg focus: ring - 2 focus: ring - blue - 500 focus: border - blue - 500 dark: bg - gray - 700 dark: border - gray - 600 dark: text - white ${ newRow.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : '' } `}
                       placeholder="Enter wind value"
                       disabled={newRow.type === 'Solar'}
                     />
@@ -1251,7 +1252,7 @@ export default function AnalyticsPage() {
                     <input
                       type="text"
                       value={newRow.pss.replace('PSS - ', '')}
-                      onChange={(e) => setNewRow({...newRow, pss: `PSS - ${e.target.value}`})}
+                      onChange={(e) => setNewRow({...newRow, pss: `PSS - ${ e.target.value } `})}
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       placeholder="Enter number"
                     />
@@ -1510,7 +1511,7 @@ export default function AnalyticsPage() {
                               type="number"
                               value={editRow?.solar || ''}
                               onChange={(e) => handleEditInputChange('solar', e.target.value ? parseFloat(e.target.value) : null)}
-                              className={`w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs ${editRow?.type === 'Wind' || editRow?.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`w - full rounded - md bg - input - background dark: bg - [#171717] text - foreground dark: text - white border border - input - border dark: border - gray - 600 px - 2 py - 1 text - xs ${ editRow?.type === 'Wind' || editRow?.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : '' } `}
                               disabled={editRow?.type === 'Wind' || editRow?.type === 'Hybrid'}
                             />
                           </td>
@@ -1519,7 +1520,7 @@ export default function AnalyticsPage() {
                               type="number"
                               value={editRow?.wind || ''}
                               onChange={(e) => handleEditInputChange('wind', e.target.value ? parseFloat(e.target.value) : null)}
-                              className={`w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs ${editRow?.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              className={`w - full rounded - md bg - input - background dark: bg - [#171717] text - foreground dark: text - white border border - input - border dark: border - gray - 600 px - 2 py - 1 text - xs ${ editRow?.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : '' } `}
                               disabled={editRow?.type === 'Solar'}
                             />
                           </td>
@@ -1562,7 +1563,7 @@ export default function AnalyticsPage() {
                             <input
                               type="text"
                               value={editRow?.pss?.replace('PSS - ', '') || ''}
-                              onChange={(e) => handleEditInputChange('pss', `PSS - ${e.target.value}`)}
+                              onChange={(e) => handleEditInputChange('pss', `PSS - ${ e.target.value } `)}
                               className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
                             />
                           </td>
