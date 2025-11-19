@@ -40,15 +40,28 @@ def health_check():
 
 @app.get("/table-data")
 def get_table_data(fiscalYear: str = Query(..., description="Fiscal Year")):
+    print(f"Received request for fiscalYear: {fiscalYear}")
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     try:
+        print(f"Executing query for fiscalYear: {fiscalYear}")
         cursor.execute('SELECT * FROM table_data WHERE fiscal_year = ? AND is_deleted = 0', (fiscalYear,))
         row = cursor.fetchone()
-        data = json.loads(row['data']) if row else []
-        return {"data": data}
+        print(f"Query result: {row is not None}")
+        if row:
+            print(f"Row keys: {list(row.keys())}")
+            data = json.loads(row['data'])
+            print(f"Data loaded, length: {len(data)}")
+        else:
+            data = []
+        result = {"data": data}
+        print(f"Returning result: {result}")
+        return result
     except Exception as e:
+        print(f"Error in get_table_data: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()

@@ -5,8 +5,32 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/api/:path*",
-        destination: "http://localhost:8004/api/:path*",
+        source: "/table-data",
+        destination: "http://localhost:8005/table-data",
+      },
+      {
+        source: "/table-data/:path*",
+        destination: "http://localhost:8005/table-data/:path*",
+      },
+      {
+        source: "/dropdown-options",
+        destination: "http://localhost:8005/dropdown-options",
+      },
+      {
+        source: "/dropdown-options/:path*",
+        destination: "http://localhost:8005/dropdown-options/:path*",
+      },
+      {
+        source: "/location-relationships",
+        destination: "http://localhost:8005/location-relationships",
+      },
+      {
+        source: "/location-relationships/:path*",
+        destination: "http://localhost:8005/location-relationships/:path*",
+      },
+      {
+        source: "/health",
+        destination: "http://localhost:8005/health",
       },
     ];
   },

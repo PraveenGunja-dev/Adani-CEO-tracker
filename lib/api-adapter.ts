@@ -1,9 +1,29 @@
-// API adapter to replace SQLite functionality with direct data handling
-// Instead of making HTTP requests, we'll return mock data directly
+// API adapter to connect to the FastAPI backend
+// This replaces the mock implementation with actual HTTP requests to the backend
+import { API_BASE_URL } from '@/lib/config';
+
 const isServer = typeof window === 'undefined';
 
-// Mock the MongoDB interface to work with direct data handling
+// Helper function to make API requests
+async function apiRequest(url: string, options: RequestInit = {}) {
+  const fullUrl = `${API_BASE_URL}${url}`;
+  const response = await fetch(fullUrl, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+  
+  return response.json();
+}
+
 export async function connectToDatabase() {
+  // This is a no-op for API-based implementation
   return {
     db: {
       collection: (name: string) => {
@@ -13,29 +33,19 @@ export async function connectToDatabase() {
             try {
               if (name === 'tableData') {
                 const fiscalYear = query.fiscalYear;
-                // Return mock table data directly instead of making HTTP requests
-                console.log(`Finding data for fiscal year ${fiscalYear}:`, []);
-                return { data: [] };
+                // Make actual HTTP request to backend
+                const result = await apiRequest(`/table-data?fiscalYear=${fiscalYear}`);
+                return result;
               } else if (name === 'dropdownOptions') {
                 const fiscalYear = query.fiscalYear;
-                // Return mock dropdown options directly instead of making HTTP requests
-                const mockOptions = {
-                  fiscalYear,
-                  groups: ['AGEL', 'ACL'],
-                  ppaMerchants: ['PPA', 'Merchant'],
-                  types: ['Solar', 'Wind', 'Hybrid'],
-                  locationCodes: ['Khavda', 'RJ'],
-                  locations: ['Khavda', 'Baap', 'Essel'],
-                  connectivities: ['CTU']
-                };
-                return mockOptions;
+                // Make actual HTTP request to backend
+                const result = await apiRequest(`/dropdown-options?fiscalYear=${fiscalYear}`);
+                return result;
               } else if (name === 'locationRelationships') {
                 const fiscalYear = query.fiscalYear;
-                // Return mock location relationships directly instead of making HTTP requests
-                return { 
-                  fiscalYear,
-                  relationships: [] 
-                };
+                // Make actual HTTP request to backend
+                const result = await apiRequest(`/location-relationships?fiscalYear=${fiscalYear}`);
+                return result;
               }
               return null;
             } catch (error) {
@@ -44,22 +54,36 @@ export async function connectToDatabase() {
             }
           },
 
-          // Update or insert a document with versioning
+          // Update or insert a document
           updateOne: async (filter: any, update: any, options: any) => {
             try {
               if (name === 'tableData') {
                 const fiscalYear = filter.fiscalYear;
                 const data = update.$set.data;
                 
-                console.log(`Updating table data for fiscal year ${fiscalYear} with data:`, data);
+                // Make actual HTTP request to backend
+                const result = await apiRequest(`/table-data`, {
+                  method: 'POST',
+                  body: JSON.stringify({ fiscalYear, data }),
+                });
+                
                 return { modifiedCount: 1 };
               } else if (name === 'dropdownOptions') {
                 const optionsData = update.$set;
-                const fiscalYear = optionsData.fiscalYear || 'FY_25';
+                // Make actual HTTP request to backend
+                const result = await apiRequest(`/dropdown-options`, {
+                  method: 'POST',
+                  body: JSON.stringify(optionsData),
+                });
                 return { modifiedCount: 1 };
               } else if (name === 'locationRelationships') {
                 const relationships = update.$set.relationships;
                 const fiscalYear = update.$set.fiscalYear || 'FY_25';
+                // Make actual HTTP request to backend
+                const result = await apiRequest(`/location-relationships?fiscalYear=${fiscalYear}`, {
+                  method: 'POST',
+                  body: JSON.stringify(relationships),
+                });
                 return { modifiedCount: relationships.length };
               }
               return { modifiedCount: 0 };
@@ -69,11 +93,15 @@ export async function connectToDatabase() {
             }
           },
 
-          // Soft delete one document (mark as deleted instead of removing)
+          // Delete one document
           deleteOne: async (filter: any) => {
             try {
               if (name === 'tableData') {
                 const fiscalYear = filter.fiscalYear;
+                // Make actual HTTP request to backend
+                await apiRequest(`/table-data?fiscalYear=${fiscalYear}`, {
+                  method: 'DELETE',
+                });
                 return { deletedCount: 1 };
               }
               return { deletedCount: 0 };
