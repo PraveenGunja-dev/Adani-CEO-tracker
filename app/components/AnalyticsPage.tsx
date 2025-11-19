@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import SearchableDropdown from './SearchableDropdown';
+import * as XLSX from 'xlsx'; // Add this import for Excel export
 
 // Register Chart.js components
 ChartJS.register(
@@ -56,6 +57,7 @@ export default function AnalyticsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [tableData, setTableData] = useState<TableRow[]>([]); // State to hold data from API
+  const [dataLoaded, setDataLoaded] = useState(false); // Add this to track if data has been loaded from database
   const [newRow, setNewRow] = useState<Omit<TableRow, 'id' | 'sno'>>({
     capacity: null,
     group: '',
@@ -69,6 +71,9 @@ export default function AnalyticsPage() {
     pss: '',
     connectivity: ''
   });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editRow, setEditRow] = useState<TableRow | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null); // Add this for 3-dot menu
 
   // State for dropdown options
   const [groups, setGroups] = useState<string[]>(['AGEL', 'ACL']);
@@ -294,6 +299,189 @@ export default function AnalyticsPage() {
     }
   };
 
+  // Handle edit row
+  const handleEditRow = (row: TableRow) => {
+    if (!user) {
+      alert('You need to be authenticated to edit a row.');
+      return;
+    }
+    
+    setEditingId(row.id);
+    setEditRow({...row});
+    setOpenMenuId(null); // Close the menu when editing
+  };
+
+  // Handle delete row
+  const handleDeleteRow = async (id: number) => {
+    if (!user) {
+      alert('You need to be authenticated to delete a row.');
+      return;
+    }
+    
+    // Confirm deletion with a dialog
+    const confirmed = window.confirm('Are you sure you want to delete this row? This action cannot be undone.');
+    if (!confirmed) {
+      setOpenMenuId(null); // Close the menu
+      return;
+    }
+    
+    setOpenMenuId(null); // Close the menu
+    
+    // Update the data in state
+    const updatedData = tableData.filter(row => row.id !== id);
+    setTableData(updatedData);
+    
+    // Save to database
+    // Only save to database if data has been loaded from the database
+    // This prevents saving empty data on initial load
+    if (dataLoaded) {
+      try {
+        const response = await fetch('/api/table-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fiscalYear, data: updatedData }),
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to save data to database:', response.status, response.statusText);
+          alert('Failed to delete row from database');
+          // Revert the change in UI if database update failed
+          const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
+          setTableData(originalData.data);
+        }
+      } catch (error) {
+        console.error('Error saving table data to database:', error);
+        alert('Error deleting row from database');
+        // Revert the change in UI if database update failed
+        const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
+        setTableData(originalData.data);
+      }
+    } else {
+      console.log(`Skipping database save for ${fiscalYear} - data not yet loaded from database`);
+    }
+  };
+
+  // Handle save edit
+  const handleSaveEdit = async () => {
+    if (!user) {
+      alert('You need to be authenticated to save changes.');
+      return;
+    }
+    
+    if (!editRow) return;
+    
+    // Validate required fields
+    if (!editRow.capacity || !editRow.group || !editRow.ppaMerchant || !editRow.type || 
+        !editRow.location || !editRow.locationCode || !editRow.pss || !editRow.connectivity) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    // For Hybrid type, ensure only wind value is used
+    const validatedEditRow = {
+      ...editRow,
+      ...(editRow.type === 'Hybrid' && { solar: null })
+    };
+    
+    // Update the data in state
+    const updatedData = tableData.map(row => row.id === editRow.id ? validatedEditRow : row);
+    setTableData(updatedData);
+    setEditingId(null);
+    setEditRow(null);
+    
+    // Save to database
+    // Only save to database if data has been loaded from the database
+    // This prevents saving empty data on initial load
+    if (dataLoaded) {
+      try {
+        const response = await fetch('/api/table-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fiscalYear, data: updatedData }),
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to save data to database:', response.status, response.statusText);
+          alert('Failed to save changes to database');
+        }
+      } catch (error) {
+        console.error('Error saving table data to database:', error);
+        alert('Error saving changes to database');
+      }
+    } else {
+      console.log(`Skipping database save for ${fiscalYear} - data not yet loaded from database`);
+    }
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditRow(null);
+  };
+
+  // Handle input change for edit row
+  const handleEditInputChange = (field: keyof TableRow, value: string | number | null) => {
+    if (editRow) {
+      // Clear solar when type is Wind and clear wind when type is Solar
+      // For Hybrid, use only wind value
+      if (field === 'type') {
+        if (value === 'Wind') {
+          setEditRow({
+            ...editRow,
+            type: value as string,
+            solar: null
+          });
+        } else if (value === 'Solar') {
+          setEditRow({
+            ...editRow,
+            type: value as string,
+            wind: null
+          });
+        } else if (value === 'Hybrid') {
+          setEditRow({
+            ...editRow,
+            type: value as string,
+            solar: null  // Clear solar for Hybrid type
+          });
+        } else {
+          setEditRow({
+            ...editRow,
+            type: value as string
+          });
+        }
+      } else {
+        setEditRow({
+          ...editRow,
+          [field]: value
+        });
+      }
+    }
+  };
+
+  // Toggle menu for row actions
+  const toggleMenu = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenMenuId(openMenuId === id ? null : id);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openMenuId !== null) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openMenuId]);
+
   // Handle form submission
   const handleFormSubmit = () => {
     setShowTracker(prev => !prev);
@@ -346,6 +534,9 @@ export default function AnalyticsPage() {
       } catch (error) {
         console.error('Error fetching table data:', error);
         setTableData([]);
+      } finally {
+        // Mark data as loaded regardless of success or failure
+        setDataLoaded(true);
       }
     };
 
@@ -399,26 +590,32 @@ export default function AnalyticsPage() {
     });
 
     // Save to database
-    try {
-      const response = await fetch('/api/table-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fiscalYear, data: updatedData }),
-      });
+    // Only save to database if data has been loaded from the database
+    // This prevents saving empty data on initial load
+    if (dataLoaded) {
+      try {
+        const response = await fetch('/api/table-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fiscalYear, data: updatedData }),
+        });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Failed to save data to database:', response.status, response.statusText, errorText);
-        alert(`Failed to save data to database: ${response.status} ${response.statusText}`);
-      } else {
-        const result = await response.json();
-        console.log('Data saved successfully to database:', result);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Failed to save data to database:', response.status, response.statusText, errorText);
+          alert(`Failed to save data to database: ${response.status} ${response.statusText}`);
+        } else {
+          const result = await response.json();
+          console.log('Data saved successfully to database:', result);
+        }
+      } catch (error: any) {
+        console.error('Error saving table data to database:', error);
+        alert(`Error saving data to database: ${error.message || 'Unknown error'}`);
       }
-    } catch (error: any) {
-      console.error('Error saving table data to database:', error);
-      alert(`Error saving data to database: ${error.message || 'Unknown error'}`);
+    } else {
+      console.log(`Skipping database save for ${fiscalYear} - data not yet loaded from database`);
     }
 
     // Close the form
@@ -572,6 +769,67 @@ export default function AnalyticsPage() {
 
   const chartData = getChartData();
 
+  // Calculate sums for numeric columns
+  const calculateSums = () => {
+    return tableData.reduce((acc, row) => {
+      acc.capacity += row.capacity || 0;
+      acc.solar += row.solar || 0;
+      acc.wind += row.wind || 0;
+      return acc;
+    }, { capacity: 0, solar: 0, wind: 0 });
+  };
+
+  const sums = calculateSums();
+
+  // Handle export to Excel
+  const handleExportToExcel = () => {
+    // Create the data array with headers
+    const dataWithTotals = [
+      ['S.No', 'Capacity', 'Group', 'PPA/Merchant', 'Type', 'Solar', 'Wind', 'SPV', 'Location Code', 'Location', 'PSS', 'Connectivity'],
+      ...tableData.map(row => [
+        row.sno,
+        row.capacity,
+        row.group,
+        row.ppaMerchant,
+        row.type,
+        row.solar,
+        row.wind,
+        row.spv,
+        row.locationCode,
+        row.location,
+        row.pss,
+        row.connectivity
+      ]),
+      [], // Empty row
+      ['TOTAL', sums.capacity.toFixed(2), '', '', '', sums.solar.toFixed(2), sums.wind.toFixed(2), '', '', '', '', '']
+    ];
+    
+    // Create the data worksheet with totals
+    const dataWorksheet = XLSX.utils.aoa_to_sheet(dataWithTotals);
+    
+    // Create summary data
+    const summaryData = [
+      ['SUMMARY REPORT'],
+      [''],
+      ['Metric', 'Value'],
+      ['Total Capacity', sums.capacity.toFixed(2)],
+      ['Total Solar', sums.solar.toFixed(2)],
+      ['Total Wind', sums.wind.toFixed(2)],
+      ['Total Projects', tableData.length]
+    ];
+    
+    // Create summary worksheet
+    const summaryWorksheet = XLSX.utils.aoa_to_sheet(summaryData);
+    
+    // Create workbook and add both worksheets
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, dataWorksheet, 'Table Data');
+    XLSX.utils.book_append_sheet(workbook, summaryWorksheet, 'Summary');
+    
+    // Export the workbook
+    XLSX.writeFile(workbook, `table-data-${fiscalYear}.xlsx`);
+  };
+
   return (
     <div className=" dark:bg-[#171717]">
       {/* Main Layout - Year Selection on Left, Charts on Right */}
@@ -720,27 +978,38 @@ export default function AnalyticsPage() {
       </div>
       
       {/* Add New Capacity Button - Moved above the table */}
-      <div className="mt-6">
-        {user ? (
+      <div className="mt-6 flex justify-between items-center">
+        <div>
+          {user ? (
+            <button
+              type="button"
+              onClick={handleAddNewCapacity}
+              className="rounded-md bg-button-primary hover:bg-button-primary-hover px-4 py-2 text-sm text-white shadow-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-button-primary transition-colors"
+            >
+              Add New Capacity
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                // Redirect to login page
+                router.push('/login?redirect=/application#analytics');
+              }}
+              className="rounded-md bg-button-primary hover:bg-button-primary-hover px-4 py-2 text-sm text-white shadow-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-button-primary transition-colors"
+            >
+              Login to Add
+            </button>
+          )}
+        </div>
+        <div>
           <button
             type="button"
-            onClick={handleAddNewCapacity}
-            className="rounded-md bg-button-primary hover:bg-button-primary-hover px-4 py-2 text-sm text-white shadow-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-button-primary transition-colors"
+            onClick={handleExportToExcel}
+            className="rounded-md bg-green-600 hover:bg-green-700 px-4 py-2 text-sm text-white shadow-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 transition-colors"
           >
-            Add New Capacity
+            Export to Excel
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              // Redirect to login page
-              router.push('/login?redirect=/application#analytics');
-            }}
-            className="rounded-md bg-button-primary hover:bg-button-primary-hover px-4 py-2 text-sm text-white shadow-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-button-primary transition-colors"
-          >
-            Login to Add
-          </button>
-        )}
+        </div>
       </div>
       
       {/* Tracker Form - Add New Capacity Entry */}
@@ -872,7 +1141,7 @@ export default function AnalyticsPage() {
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707a1 1 0 011.414 0z" clipRule="evenodd" />
+                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <input
@@ -987,6 +1256,20 @@ export default function AnalyticsPage() {
                       placeholder="Enter number"
                     />
                   </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location Code</label>
+                  <SearchableDropdown
+                    options={locationCodes}
+                    value={newRow.locationCode}
+                    onChange={(value) => setNewRow({...newRow, locationCode: value})}
+                    onAddNew={(value) => {
+                      saveDropdownOption('locationCodes', value);
+                      setNewRow({...newRow, locationCode: value});
+                    }}
+                    placeholder="Select or type location code..."
+                  />
                 </div>
                 
                 <div>
@@ -1151,6 +1434,9 @@ export default function AnalyticsPage() {
                       </div>
                     </div>
                   </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider align-top">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -1165,18 +1451,214 @@ export default function AnalyticsPage() {
                   )
                   .map((row, index) => (
                     <tr key={row.id || index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{row.sno || index + 1}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.capacity !== null ? row.capacity.toFixed(2) : ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.group || ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.ppaMerchant || ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.type || ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.solar !== null ? row.solar.toFixed(2) : ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.wind !== null ? row.wind.toFixed(2) : ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.spv || ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.locationCode || ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.location || ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.pss || ''}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.connectivity || ''}</td>
+                      {editingId === row.id ? (
+                        // Edit mode row
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-300">
+                            {row.sno || index + 1}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editRow?.capacity || ''}
+                              onChange={(e) => handleEditInputChange('capacity', e.target.value ? parseFloat(e.target.value) : null)}
+                              className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <SearchableDropdown
+                              options={groups}
+                              value={editRow?.group || ''}
+                              onChange={(value) => handleEditInputChange('group', value)}
+                              onAddNew={(value) => {
+                                saveDropdownOption('groups', value);
+                                handleEditInputChange('group', value);
+                              }}
+                              placeholder="Select Group"
+                              className="text-xs"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <SearchableDropdown
+                              options={ppaMerchants}
+                              value={editRow?.ppaMerchant || ''}
+                              onChange={(value) => handleEditInputChange('ppaMerchant', value)}
+                              onAddNew={(value) => {
+                                saveDropdownOption('ppaMerchants', value);
+                                handleEditInputChange('ppaMerchant', value);
+                              }}
+                              placeholder="Select Option"
+                              className="text-xs"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <SearchableDropdown
+                              options={types}
+                              value={editRow?.type || ''}
+                              onChange={(value) => handleEditInputChange('type', value)}
+                              onAddNew={(value) => {
+                                saveDropdownOption('types', value);
+                                handleEditInputChange('type', value);
+                              }}
+                              placeholder="Select Type"
+                              className="text-xs"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <input
+                              type="number"
+                              value={editRow?.solar || ''}
+                              onChange={(e) => handleEditInputChange('solar', e.target.value ? parseFloat(e.target.value) : null)}
+                              className={`w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs ${editRow?.type === 'Wind' || editRow?.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={editRow?.type === 'Wind' || editRow?.type === 'Hybrid'}
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <input
+                              type="number"
+                              value={editRow?.wind || ''}
+                              onChange={(e) => handleEditInputChange('wind', e.target.value ? parseFloat(e.target.value) : null)}
+                              className={`w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs ${editRow?.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={editRow?.type === 'Solar'}
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <input
+                              type="text"
+                              value={editRow?.spv || ''}
+                              onChange={(e) => handleEditInputChange('spv', e.target.value.toUpperCase())}
+                              className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
+                              style={{ textTransform: 'uppercase' }}
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <SearchableDropdown
+                              options={locationCodes}
+                              value={editRow?.locationCode || ''}
+                              onChange={(value) => handleEditInputChange('locationCode', value)}
+                              onAddNew={(value) => {
+                                saveDropdownOption('locationCodes', value);
+                                handleEditInputChange('locationCode', value);
+                              }}
+                              placeholder="Select Location Code"
+                              className="text-xs"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <SearchableDropdown
+                              options={locations}
+                              value={editRow?.location || ''}
+                              onChange={(value) => handleEditInputChange('location', value)}
+                              onAddNew={(value) => {
+                                saveDropdownOption('locations', value);
+                                handleEditInputChange('location', value);
+                              }}
+                              placeholder="Select Location"
+                              className="text-xs"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <input
+                              type="text"
+                              value={editRow?.pss?.replace('PSS - ', '') || ''}
+                              onChange={(e) => handleEditInputChange('pss', `PSS - ${e.target.value}`)}
+                              className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                            <SearchableDropdown
+                              options={connectivities}
+                              value={editRow?.connectivity || ''}
+                              onChange={(value) => handleEditInputChange('connectivity', value)}
+                              onAddNew={(value) => {
+                                saveDropdownOption('connectivities', value);
+                                handleEditInputChange('connectivity', value);
+                              }}
+                              placeholder="Select Connectivity"
+                              className="text-xs"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs font-medium">
+                            <button
+                              onClick={handleSaveEdit}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-2 text-xs"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300 text-xs"
+                            >
+                              Cancel
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        // Display mode row
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-300">{row.sno || index + 1}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.capacity !== null ? row.capacity.toFixed(2) : ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.group || ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.ppaMerchant || ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.type || ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.solar !== null ? row.solar.toFixed(2) : ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.wind !== null ? row.wind.toFixed(2) : ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.spv || ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.locationCode || ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.location || ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.pss || ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{row.connectivity || ''}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs font-medium relative">
+                            {user ? (
+                              <div className="relative inline-block text-left">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleMenu(row.id, e);
+                                  }}
+                                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                  </svg>
+                                </button>
+                                {openMenuId === row.id && (
+                                  <div 
+                                    className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-[#171717] ring-1 ring-black ring-opacity-5 z-20"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                                      <button
+                                        onClick={() => {
+                                          handleEditRow(row);
+                                          setOpenMenuId(null);
+                                        }}
+                                        className="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 w-full text-left"
+                                        role="menuitem"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleDeleteRow(row.id);
+                                          setOpenMenuId(null);
+                                        }}
+                                        className="block px-4 py-2 text-xs text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-800 w-full text-left"
+                                        role="menuitem"
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 dark:text-gray-500 text-xs">Login required</span>
+                            )}
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))
                 }
@@ -1189,9 +1671,27 @@ export default function AnalyticsPage() {
                   (filters.connectivity === '' || row.connectivity === filters.connectivity)
                 ).length === 0 && (
                   <tr>
-                    <td colSpan={12} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <td colSpan={13} className="px-6 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
                       No data matches the current filters
                     </td>
+                  </tr>
+                )}
+                {/* Total row */}
+                {tableData.length > 0 && (
+                  <tr className="bg-gray-100 dark:bg-gray-800 font-semibold">
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">TOTAL</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{sums.capacity.toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{sums.solar.toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{sums.wind.toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white"></td>
                   </tr>
                 )}
               </tbody>

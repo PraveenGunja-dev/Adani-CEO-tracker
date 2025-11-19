@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import DataTable from '../components/DataTable';
-import NewDataTable from '../components/NewDataTable';
 
 export default function DataTableTestPage() {
   const [fiscalYear, setFiscalYear] = useState('FY_25');
@@ -74,7 +73,7 @@ export default function DataTableTestPage() {
       
       <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         {view === 'new' ? (
-          <NewDataTable fiscalYear={fiscalYear} />
+          <DataTable fiscalYear={fiscalYear} />
         ) : (
           <DataTable fiscalYear={fiscalYear} />
         )}

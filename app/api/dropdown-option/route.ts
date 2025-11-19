@@ -22,29 +22,51 @@ export async function POST(request: Request) {
     // Log database connection for debugging
     console.log('Connected to database');
     
-    // Insert the new option
-    const stmt = db.prepare(
-      'INSERT INTO dropdown_options (fiscal_year, option_type, option_value, version) VALUES (?, ?, ?, 1)'
-    );
-    const result = stmt.run(fiscalYear, optionType, optionValue);
+    // First, get the existing options for this fiscal year
+    const existingOptions = await db.collection('dropdownOptions').findOne({ fiscalYear });
     
-    // Log insert result for debugging
-    console.log('Insert result:', result);
+    // Create an updated options object with all option types
+    const updatedOptions: any = existingOptions ? { ...existingOptions } : {
+      groups: [],
+      ppaMerchants: [],
+      types: [],
+      locationCodes: [],
+      locations: [],
+      connectivities: []
+    };
     
-    // Check if the operation was successful
-    if (result.changes > 0) {
-      return NextResponse.json({ 
-        success: true, 
-        optionType, 
-        optionValue,
-        message: 'Option added successfully'
-      }, { status: 200 });
-    } else {
-      return NextResponse.json(
-        { error: 'Failed to add dropdown option' },
-        { status: 500 }
-      );
+    // Add the new option to the appropriate array if it doesn't already exist
+    if (Array.isArray(updatedOptions[optionType]) && !updatedOptions[optionType].includes(optionValue)) {
+      updatedOptions[optionType].push(optionValue);
     }
+    
+    // Update all dropdown options in the database using the MongoDB-like interface
+    // This is the correct way to update dropdown options - we need to send all options together
+    const result = await db.collection('dropdownOptions').updateOne(
+      { fiscalYear },
+      { 
+        $set: { 
+          fiscalYear,
+          groups: updatedOptions.groups,
+          ppaMerchants: updatedOptions.ppaMerchants,
+          types: updatedOptions.types,
+          locationCodes: updatedOptions.locationCodes,
+          locations: updatedOptions.locations,
+          connectivities: updatedOptions.connectivities
+        }
+      },
+      { upsert: true }
+    );
+    
+    // Log update result for debugging
+    console.log('Update result:', result);
+    
+    return NextResponse.json({ 
+      success: true, 
+      optionType, 
+      optionValue,
+      message: 'Option added successfully'
+    }, { status: 200 });
   } catch (error: any) {
     console.error('Error adding dropdown option:', error);
     return NextResponse.json(

@@ -67,8 +67,8 @@ export async function connectToDatabase() {
               
               console.log(`Updating table data for fiscal year ${fiscalYear} with data:`, data);
               
-              // Check if record exists
-              const checkStmt = db.prepare('SELECT id, version FROM table_data WHERE fiscal_year = ?');
+              // Check if record exists (and is not deleted)
+              const checkStmt = db.prepare('SELECT id, version FROM table_data WHERE fiscal_year = ? AND is_deleted = FALSE');
               const existing = checkStmt.get(fiscalYear);
               
               console.log(`Existing record for ${fiscalYear}:`, existing);

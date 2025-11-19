@@ -1,6 +1,5 @@
 "use client";
 
-import UserTable from "@/app/components/UserTable";
 import { useTheme } from "@/app/components/ThemeProvider";
 
 export default function HomePageContent() {
@@ -26,9 +25,9 @@ export default function HomePageContent() {
           </p>
         </div>
         
-        <div className="bg-card-background rounded-xl border border-card-border p-6 shadow-2xl">
+        {/* <div className="bg-card-background rounded-xl border border-card-border p-6 shadow-2xl">
           <UserTable />
-        </div>
+        </div> */}
         
         <div className="mt-12 text-center text-foreground/50 text-sm">
           <p>© {new Date().getFullYear()} Adani Excel. All rights reserved.</p>

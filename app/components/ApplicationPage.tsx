@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import UserTable from '@/app/components/UserTable';
 import MasterDataTable from '@/app/components/MasterDataTable';
 import AnalyticsPage from '@/app/components/AnalyticsPage';
 import { useAuth } from '@/lib/hooks/useAuth';
