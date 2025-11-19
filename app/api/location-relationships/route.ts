@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/sqlite-adapter';
+import { connectToDatabase } from '@/lib/api-adapter';
 
 // Define the structure for location relationships
 interface LocationRelationship {

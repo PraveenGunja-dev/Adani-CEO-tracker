@@ -60,7 +60,7 @@ export default function EnhancedDataTable({
   useEffect(() => {
     const loadDropdownOptions = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/dropdown-options?fiscalYear=${fiscalYear}`);
+        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
         if (response.ok) {
           const options = await response.json();
           setGroups(Array.isArray(options.groups) ? options.groups : ['AGEL', 'ACL']);
@@ -88,7 +88,7 @@ export default function EnhancedDataTable({
         console.log('Loading data for fiscal year:', fiscalYear);
 
         // Try to load from database
-        const response = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`, {
+        const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache'
@@ -224,7 +224,7 @@ export default function EnhancedDataTable({
 
     // Save to database
     try {
-      const response = await fetch(`${API_BASE_URL}/table-data`, {
+      const response = await fetch(`/api/table-data`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -267,7 +267,7 @@ export default function EnhancedDataTable({
     
     // Save to database
     try {
-      const response = await fetch(`${API_BASE_URL}/table-data`, {
+      const response = await fetch(`/api/table-data`, {
         method: 'POST',
         headers: {
         'Content-Type': 'application/json',
@@ -280,14 +280,14 @@ export default function EnhancedDataTable({
       console.error('Failed to save data to database:', response.status, response.statusText);
       alert('Failed to delete row from database');
       // Revert the change in UI if database update failed
-      const originalData = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
+      const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
       setData(originalData.data);
     }
   } catch (error) {
     console.error('Error saving table data to database:', error);
     alert('Error deleting row from database');
     // Revert the change in UI if database update failed
-    const originalData = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
+    const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
     setData(originalData.data);
   }
 };

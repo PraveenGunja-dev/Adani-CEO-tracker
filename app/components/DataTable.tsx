@@ -54,7 +54,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
   useEffect(() => {
     const loadDropdownOptions = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/dropdown-options?fiscalYear=${fiscalYear}`);
+        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
         if (response.ok) {
           const options = await response.json();
           setGroups(Array.isArray(options.groups) ? options.groups : ['AGEL', 'ACL']);
@@ -82,7 +82,7 @@ export default function DataTable({ fiscalYear = 'FY_25' }: DataTableProps) {
         console.log('Loading data for fiscal year:', fiscalYear);
 
         // Try to load from database
-        const response = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`, {
+        const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache'

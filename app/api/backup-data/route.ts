@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/sqlite-adapter';
-import { db } from '@/lib/sqlite';
+import { connectToDatabase } from '@/lib/api-adapter';
 
 // GET /api/backup-data?fiscalYear=xxx - Get backup data for a specific fiscal year
 export async function GET(request: Request) {
@@ -8,25 +7,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const fiscalYear = searchParams.get('fiscalYear') || 'FY_25';
 
-    // Get all versions of data for the fiscal year
-    const results: any[] = await db.all(`
-      SELECT id, fiscal_year, data, version, is_deleted, created_at, updated_at 
-      FROM table_data 
-      WHERE fiscal_year = ? 
-      ORDER BY version DESC
-    `, [fiscalYear]);
-
-    // Parse JSON data
-    const backups = results.map(row => ({
-      ...row,
-      data: JSON.parse(row.data)
-    }));
-
+    // For API implementation, we'll need to make a request to the backend
+    // Since the FastAPI backend doesn't have a specific backup endpoint,
+    // we'll return an empty response for now
     return NextResponse.json(
       {
         fiscalYear,
-        backups,
-        count: backups.length
+        backups: [],
+        count: 0
       },
       { status: 200 }
     );
@@ -51,37 +39,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get the specific version of data
-    const result: any = await db.get(`
-      SELECT data 
-      FROM table_data 
-      WHERE fiscal_year = ? AND version = ?
-    `, [fiscalYear, version]);
-
-    if (!result) {
-      return NextResponse.json(
-        { error: 'Backup not found' },
-        { status: 404 }
-      );
-    }
-
-    // Restore the data by updating the current version
-    const { db: mongoDb } = await connectToDatabase();
-    const restoreResult = await mongoDb.collection('tableData').updateOne(
-      { fiscalYear },
-      {
-        $set: {
-          fiscalYear,
-          data: JSON.parse(result.data),
-          updatedAt: new Date()
-        }
-      },
-      { upsert: true }
-    );
-
+    // For API implementation, we'll need to make a request to the backend
+    // Since the FastAPI backend doesn't have a specific backup restore endpoint,
+    // we'll return a not implemented response for now
     return NextResponse.json(
-      { message: 'Data restored successfully' },
-      { status: 200 }
+      { error: 'Backup restore not implemented in API mode' },
+      { status: 501 }
     );
   } catch (error: any) {
     console.error('Error restoring backup data:', error);
@@ -106,23 +69,13 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Hard delete a specific version (only for backups)
-    const result = await db.run(`
-      DELETE FROM table_data 
-      WHERE fiscal_year = ? AND version = ? AND is_deleted = TRUE
-    `, [fiscalYear, version]);
-
-    if (result.changes > 0) {
-      return NextResponse.json(
-        { message: 'Backup version deleted successfully' },
-        { status: 200 }
-      );
-    } else {
-      return NextResponse.json(
-        { error: 'Backup version not found or not deleted' },
-        { status: 404 }
-      );
-    }
+    // For API implementation, we'll need to make a request to the backend
+    // Since the FastAPI backend doesn't have a specific backup delete endpoint,
+    // we'll return a not implemented response for now
+    return NextResponse.json(
+      { error: 'Backup delete not implemented in API mode' },
+      { status: 501 }
+    );
   } catch (error: any) {
     console.error('Error deleting backup data:', error);
     return NextResponse.json(

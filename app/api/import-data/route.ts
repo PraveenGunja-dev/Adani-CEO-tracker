@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/sqlite-adapter';
+import { connectToDatabase } from '@/lib/api-adapter';
 import exDataFY23 from '@/app/components/ex.json';
 import exDataFY24 from '@/app/components/ex_fy25.json';
 import exDataFY25 from '@/app/components/ex_fy26.json';

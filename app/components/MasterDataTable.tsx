@@ -79,7 +79,7 @@ export default function MasterDataTable() {
     const loadMasterData = async () => {
       try {
         // Load dropdown options
-        const response = await fetch(`${API_BASE_URL}/dropdown-options?fiscalYear=${fiscalYear}`);
+        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
         if (response.ok) {
           const options = await response.json();
           // Ensure all options are arrays
@@ -96,7 +96,7 @@ export default function MasterDataTable() {
         }
 
         // Load location relationships
-        const relResponse = await fetch(`${API_BASE_URL}/location-relationships?fiscalYear=${fiscalYear}`);
+        const relResponse = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`);
         if (relResponse.ok) {
           const relationships = await relResponse.json();
           if (Array.isArray(relationships) && relationships.length > 0) {
@@ -119,7 +119,7 @@ export default function MasterDataTable() {
     const saveMasterData = async () => {
       try {
         // Save dropdown options
-        const response = await fetch(`${API_BASE_URL}/dropdown-options`, {
+        const response = await fetch(`/api/dropdown-options`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export default function MasterDataTable() {
         }
 
         // Save location relationships
-        const relResponse = await fetch(`${API_BASE_URL}/location-relationships`, {
+        const relResponse = await fetch(`/api/location-relationships`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

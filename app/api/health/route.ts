@@ -1,25 +1,27 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/sqlite';
 
 export async function GET() {
   try {
-    // Test the connection by running a simple query
-    const result = await db.get('SELECT 1');
-
-    if (result) {
+    // Test the connection by making a request to the API health endpoint through the proxy
+    const response = await fetch('http://localhost:8004/health');
+    
+    if (response.ok) {
+      const data = await response.json();
       return NextResponse.json({
         status: 'ok',
-        message: 'SQLite connection successful',
+        message: 'API connection successful',
+        apiStatus: data,
         timestamp: new Date().toISOString()
       }, { status: 200 });
     } else {
       return NextResponse.json({
         status: 'error',
-        message: 'SQLite query failed'
+        message: 'API health check failed',
+        apiStatus: response.status
       }, { status: 500 });
     }
   } catch (error: any) {
-    console.error('SQLite connection error:', error);
+    console.error('API connection error:', error);
     return NextResponse.json({
       status: 'error',
       message: error.message || 'Internal server error'

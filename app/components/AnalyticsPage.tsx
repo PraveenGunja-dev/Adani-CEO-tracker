@@ -106,7 +106,7 @@ export default function AnalyticsPage() {
     const loadMasterData = async () => {
       try {
         // Load dropdown options
-        const response = await fetch(`${API_BASE_URL}/dropdown-options?fiscalYear=${fiscalYear}`);
+        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
         if (response.ok) {
           const options = await response.json();
           // Ensure all options are arrays
@@ -121,7 +121,7 @@ export default function AnalyticsPage() {
         }
 
         // Load location relationships
-        const relResponse = await fetch(`${API_BASE_URL}/location-relationships?fiscalYear=${fiscalYear}`);
+        const relResponse = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`);
         if (relResponse.ok) {
           const relationships = await relResponse.json();
           if (Array.isArray(relationships) && relationships.length > 0) {
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
   // Function to save all dropdown options to API
   const saveDropdownOptions = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/dropdown-options`, {
+      const response = await fetch(`/api/dropdown-options`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
   // Function to save location relationships to API
   const saveLocationRelationships = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/location-relationships?fiscalYear=${fiscalYear}`, {
+      const response = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,7 +254,7 @@ export default function AnalyticsPage() {
     
     // Then save the individual option to the API
     try {
-      const response = await fetch(`${API_BASE_URL}/dropdown-option`, {
+      const response = await fetch(`/api/dropdown-option`, {
         method: 'POST',
         headers: {
         'Content-Type': 'application/json',
@@ -337,7 +337,7 @@ const handleDeleteRow = async (id: number) => {
   // This prevents saving empty data on initial load
   if (dataLoaded) {
     try {
-      const response = await fetch(`${API_BASE_URL}/table-data`, {
+      const response = await fetch(`/api/table-data`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -349,14 +349,14 @@ const handleDeleteRow = async (id: number) => {
           console.error('Failed to save data to database:', response.status, response.statusText);
           alert('Failed to delete row from database');
           // Revert the change in UI if database update failed
-          const originalData = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
+          const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
           setTableData(originalData.data);
         }
       } catch (error) {
         console.error('Error saving table data to database:', error);
         alert('Error deleting row from database');
         // Revert the change in UI if database update failed
-        const originalData = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
+        const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
         setTableData(originalData.data);
       }
     } else {
@@ -397,7 +397,7 @@ const handleDeleteRow = async (id: number) => {
     // This prevents saving empty data on initial load
     if (dataLoaded) {
       try {
-        const response = await fetch(`${API_BASE_URL}/table-data`, {
+        const response = await fetch(`/api/table-data`, {
       method: 'POST',
         headers: {
         'Content-Type': 'application/json',
@@ -524,7 +524,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchTableData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${fiscalYear}`);
+      const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`);
       if (response.ok) {
         const result = await response.json();
         setTableData(result.data || []);
@@ -595,7 +595,7 @@ const handleAddRow = async () => {
   // This prevents saving empty data on initial load
   if (dataLoaded) {
     try {
-      const response = await fetch(`${API_BASE_URL}/table-data`, {
+      const response = await fetch(`/api/table-data`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

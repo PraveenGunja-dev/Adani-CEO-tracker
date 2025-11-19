@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/sqlite-adapter';
+import { connectToDatabase } from '@/lib/api-adapter';
 
 // POST /api/dropdown-option - Add a single dropdown option
 export async function POST(request: Request) {

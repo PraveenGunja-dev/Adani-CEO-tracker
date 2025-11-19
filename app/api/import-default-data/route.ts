@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/sqlite-adapter';
+import { connectToDatabase } from '@/lib/api-adapter';
 
 // Import the fiscal year data files
 import exDataFY23 from '@/app/components/ex.json';

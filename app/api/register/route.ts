@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createUser } from '@/lib/auth';
 
 // Handle CORS preflight OPTIONS request
 export async function OPTIONS() {
@@ -43,32 +42,20 @@ export async function POST(request: Request) {
       );
     }
     
-    // Create user
-    const user = await createUser(username, email, password);
-    
-    // Return success response without password
-    const { password: _, ...userWithoutPassword } = user;
-    return NextResponse.json({ user: userWithoutPassword }, { 
-      status: 201,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
-    });
+    // For API implementation, we'll need to make a request to the backend
+    // Since the FastAPI backend doesn't have a specific register endpoint,
+    // we'll return a not implemented response for now
+    return NextResponse.json(
+      { error: 'Registration not implemented in API mode' },
+      { 
+        status: 501,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Registration error:', error);
-    
-    // Handle duplicate user error
-    if (error.message.includes('already exists')) {
-      return NextResponse.json(
-        { error: 'User with this email or username already exists' },
-        { 
-          status: 409,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
-    }
     
     // Handle other errors
     return NextResponse.json(
