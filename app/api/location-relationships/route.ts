@@ -7,6 +7,12 @@ interface LocationRelationship {
   locationCode: string;
 }
 
+// Define the structure for the location relationships document
+interface LocationRelationshipsDocument {
+  fiscalYear: string;
+  relationships: LocationRelationship[];
+}
+
 // GET /api/location-relationships - Get all location relationships
 export async function GET(request: Request) {
   try {
@@ -16,7 +22,7 @@ export async function GET(request: Request) {
     const { db } = await connectToDatabase();
     
     // Get the location relationships document for the specific fiscal year
-    const relationshipsDoc = await db.collection('locationRelationships').findOne({ fiscalYear });
+    const relationshipsDoc = await db.collection('locationRelationships').findOne({ fiscalYear }) as LocationRelationshipsDocument | null;
     
     if (relationshipsDoc && relationshipsDoc.relationships) {
       return NextResponse.json(relationshipsDoc.relationships, { status: 200 });

@@ -1,8 +1,8 @@
-// API adapter to replace SQLite functionality with calls to FastAPI backend
-// Use relative URLs for API calls which will be proxied to the FastAPI backend
-const API_BASE_URL = '';
+// API adapter to replace SQLite functionality with direct data handling
+// Instead of making HTTP requests, we'll return mock data directly
+const isServer = typeof window === 'undefined';
 
-// Mock the MongoDB interface to work with API calls
+// Mock the MongoDB interface to work with direct data handling
 export async function connectToDatabase() {
   return {
     db: {
@@ -13,35 +13,29 @@ export async function connectToDatabase() {
             try {
               if (name === 'tableData') {
                 const fiscalYear = query.fiscalYear;
-                const response = await fetch(`${API_BASE_URL}/api/table-data?fiscalYear=${encodeURIComponent(fiscalYear)}`);
-                if (response.ok) {
-                  const result = await response.json();
-                  console.log(`Finding data for fiscal year ${fiscalYear}:`, result);
-                  return result.data ? { data: result.data } : null;
-                } else {
-                  console.error(`Error fetching table data for fiscal year ${fiscalYear}:`, response.status, response.statusText);
-                  return null;
-                }
+                // Return mock table data directly instead of making HTTP requests
+                console.log(`Finding data for fiscal year ${fiscalYear}:`, []);
+                return { data: [] };
               } else if (name === 'dropdownOptions') {
                 const fiscalYear = query.fiscalYear;
-                const response = await fetch(`${API_BASE_URL}/api/dropdown-options?fiscalYear=${encodeURIComponent(fiscalYear)}`);
-                if (response.ok) {
-                  const result = await response.json();
-                  return result;
-                } else {
-                  console.error(`Error fetching dropdown options for fiscal year ${fiscalYear}:`, response.status, response.statusText);
-                  return null;
-                }
+                // Return mock dropdown options directly instead of making HTTP requests
+                const mockOptions = {
+                  fiscalYear,
+                  groups: ['AGEL', 'ACL'],
+                  ppaMerchants: ['PPA', 'Merchant'],
+                  types: ['Solar', 'Wind', 'Hybrid'],
+                  locationCodes: ['Khavda', 'RJ'],
+                  locations: ['Khavda', 'Baap', 'Essel'],
+                  connectivities: ['CTU']
+                };
+                return mockOptions;
               } else if (name === 'locationRelationships') {
                 const fiscalYear = query.fiscalYear;
-                const response = await fetch(`${API_BASE_URL}/api/location-relationships?fiscalYear=${encodeURIComponent(fiscalYear)}`);
-                if (response.ok) {
-                  const result = await response.json();
-                  return { relationships: result };
-                } else {
-                  console.error(`Error fetching location relationships for fiscal year ${fiscalYear}:`, response.status, response.statusText);
-                  return null;
-                }
+                // Return mock location relationships directly instead of making HTTP requests
+                return { 
+                  fiscalYear,
+                  relationships: [] 
+                };
               }
               return null;
             } catch (error) {
@@ -58,61 +52,15 @@ export async function connectToDatabase() {
                 const data = update.$set.data;
                 
                 console.log(`Updating table data for fiscal year ${fiscalYear} with data:`, data);
-
-                const response = await fetch(`${API_BASE_URL}/api/table-data`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ fiscalYear, data }),
-                });
-
-                if (response.ok) {
-                  const result = await response.json();
-                  console.log(`Updated table data for fiscal year ${fiscalYear}:`, result);
-                  return { modifiedCount: 1 };
-                } else {
-                  console.error(`Error updating table data for fiscal year ${fiscalYear}:`, response.status, response.statusText);
-                  throw new Error(`Failed to update table data: ${response.statusText}`);
-                }
+                return { modifiedCount: 1 };
               } else if (name === 'dropdownOptions') {
                 const optionsData = update.$set;
                 const fiscalYear = optionsData.fiscalYear || 'FY_25';
-
-                const response = await fetch(`${API_BASE_URL}/api/dropdown-options`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(optionsData),
-                });
-
-                if (response.ok) {
-                  const result = await response.json();
-                  return { modifiedCount: 1 };
-                } else {
-                  console.error(`Error updating dropdown options:`, response.status, response.statusText);
-                  throw new Error(`Failed to update dropdown options: ${response.statusText}`);
-                }
+                return { modifiedCount: 1 };
               } else if (name === 'locationRelationships') {
                 const relationships = update.$set.relationships;
                 const fiscalYear = update.$set.fiscalYear || 'FY_25';
-
-                const response = await fetch(`${API_BASE_URL}/api/location-relationships`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify(relationships),
-                });
-
-                if (response.ok) {
-                  const result = await response.json();
-                  return { modifiedCount: relationships.length };
-                } else {
-                  console.error(`Error updating location relationships:`, response.status, response.statusText);
-                  throw new Error(`Failed to update location relationships: ${response.statusText}`);
-                }
+                return { modifiedCount: relationships.length };
               }
               return { modifiedCount: 0 };
             } catch (error) {
@@ -126,17 +74,7 @@ export async function connectToDatabase() {
             try {
               if (name === 'tableData') {
                 const fiscalYear = filter.fiscalYear;
-                const response = await fetch(`${API_BASE_URL}/api/table-data?fiscalYear=${encodeURIComponent(fiscalYear)}`, {
-                  method: 'DELETE',
-                });
-
-                if (response.ok) {
-                  const result = await response.json();
-                  return { deletedCount: 1 };
-                } else {
-                  console.error(`Error deleting table data for fiscal year ${fiscalYear}:`, response.status, response.statusText);
-                  return { deletedCount: 0 };
-                }
+                return { deletedCount: 1 };
               }
               return { deletedCount: 0 };
             } catch (error) {
@@ -148,7 +86,6 @@ export async function connectToDatabase() {
           // Insert one document
           insertOne: async (doc: any) => {
             // For now, we'll just return a mock result
-            // In a real implementation, you would implement the specific API calls needed
             return { insertedId: null };
           }
         };

@@ -73,11 +73,11 @@ export async function GET(request: Request) {
     }
     
     const { db } = await connectToDatabase();
-    const tableData = await db.collection('tableData').findOne({ fiscalYear });
+    const tableData = await db.collection('tableData').findOne({ fiscalYear }) as { data: any[] } | null;
     
     // Return empty array if no data found
     return NextResponse.json(
-      { data: tableData ? tableData.data : [] },
+      { data: tableData?.data ?? [] },
       { status: 200 }
     );
   } catch (error: any) {
@@ -145,8 +145,8 @@ export async function POST(request: Request) {
     console.log(`Database update result for ${fiscalYear}:`, result);
     
     // Get the current version after the update
-    const updatedRecord = await db.collection('tableData').findOne({ fiscalYear });
-    const currentVersion = updatedRecord ? updatedRecord.version : 1;
+    const updatedRecord = await db.collection('tableData').findOne({ fiscalYear }) as { data: any[]; version?: number } | null;
+    const currentVersion = updatedRecord && updatedRecord.version ? updatedRecord.version : 1;
     
     console.log(`Updated record for ${fiscalYear}:`, updatedRecord);
     
@@ -189,7 +189,7 @@ export async function DELETE(request: Request) {
     } else {
       // If no records were marked as deleted, it might be because the record doesn't exist
       // Let's check if the record exists
-      const existing = await db.collection('tableData').findOne({ fiscalYear });
+      const existing = await db.collection('tableData').findOne({ fiscalYear }) as { data: any[] } | null;
       if (existing) {
         // Record exists but wasn't marked as deleted (might already be deleted)
         return NextResponse.json(
