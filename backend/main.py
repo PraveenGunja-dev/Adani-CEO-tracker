@@ -66,59 +66,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Register endpoint
-@app.post("/register", response_model=UserResponse)
-async def register_user(user: UserRegister):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-   
-    try:
-        # Check if user already exists
-        cursor.execute("SELECT id FROM users WHERE email = ? OR username = ?", (user.email, user.username))
-        existing_user = cursor.fetchone()
-       
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this email or username already exists"
-            )
-       
-        # Hash the password
-        hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-       
-        # Insert new user
-        cursor.execute(
-            "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-            (user.username, user.email, hashed_password)
-        )
-        conn.commit()
-       
-        # Get the created user
-        cursor.execute("SELECT id, username, email, created_at FROM users WHERE id = ?", (cursor.lastrowid,))
-        created_user = cursor.fetchone()
-       
-        return {
-            "id": created_user["id"],
-            "username": created_user["username"],
-            "email": created_user["email"],
-            "created_at": created_user["created_at"]
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating user: {str(e)}"
-        )
-    finally:
-        conn.close()
-
-# Additional route with /api prefix for direct access
-@app.post("/api/register", response_model=UserResponse)
-async def api_register_user(user: UserRegister):
-    return await register_user(user)
-
 # Login endpoint
 @app.post("/login", response_model=LoginResponse)
 async def login_user(user: UserLogin):
@@ -137,8 +84,14 @@ async def login_user(user: UserLogin):
                 detail="Invalid email or password"
             )
        
-        # Verify password
-        if not bcrypt.checkpw(user.password.encode('utf-8'), db_user["password"].encode('utf-8')):
+        # Verify password - handle both string and bytes passwords
+        stored_password = db_user["password"]
+        # If stored password is bytes, decode it to string
+        if isinstance(stored_password, bytes):
+            stored_password = stored_password.decode('utf-8')
+        
+        # Now verify the password
+        if not bcrypt.checkpw(user.password.encode('utf-8'), stored_password.encode('utf-8')):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"

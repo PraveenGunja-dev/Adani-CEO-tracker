@@ -6,12 +6,11 @@ import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function VariableManager() {
   const { variables, loading, error, setVariable, deleteVariable, refresh } = useVariables();
-  const { user, login, register, logout } = useAuth();
+  const { user, login, logout } = useAuth();
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
 
   const handleSetVariable = async () => {
     if (!key) return;
@@ -30,15 +29,6 @@ export default function VariableManager() {
   const handleLogin = async () => {
     const result = await login(email, password);
     if (result.success) {
-      setEmail('');
-      setPassword('');
-    }
-  };
-
-  const handleRegister = async () => {
-    const result = await register(username, email, password);
-    if (result.success) {
-      setUsername('');
       setEmail('');
       setPassword('');
     }
@@ -69,13 +59,6 @@ export default function VariableManager() {
           <div className="space-y-4">
             <div>
               <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-2 border rounded mb-2"
-              />
-              <input
                 type="email"
                 placeholder="Email"
                 value={email}
@@ -90,20 +73,12 @@ export default function VariableManager() {
                 className="w-full p-2 border rounded"
               />
             </div>
-            <div className="space-x-2">
-              <button 
-                onClick={handleLogin}
-                className="px-4 py-2 bg-[#0B74B0] text-white rounded hover:bg-[#0B74B0]/90 transition-colors"
-              >
-                Login
-              </button>
-              <button 
-                onClick={handleRegister}
-                className="px-4 py-2 bg-[#75479C] text-white rounded hover:bg-[#75479C]/90 transition-colors"
-              >
-                Register
-              </button>
-            </div>
+            <button 
+              onClick={handleLogin}
+              className="px-4 py-2 bg-[#0B74B0] text-white rounded hover:bg-[#0B74B0]/90 transition-colors"
+            >
+              Login
+            </button>
           </div>
         )}
       </div>

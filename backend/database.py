@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import bcrypt
 from typing import List, Any, Dict, Optional
 
 # Database path
@@ -92,6 +93,25 @@ def init_db():
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_location_relationships_fiscal_year ON location_relationships(fiscal_year)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_location_relationships_fiscal_year_deleted ON location_relationships(fiscal_year, is_deleted)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_variables_key_user ON variables(key, user_id)')
+
+        # Create admin user if it doesn't exist
+        admin_email = "admin@adani.com"
+        admin_username = "adani"
+        admin_password = "adani123456"
+        
+        # Check if admin user already exists
+        cursor.execute("SELECT id FROM users WHERE email = ?", (admin_email,))
+        existing_user = cursor.fetchone()
+        
+        if not existing_user:
+            # Hash the password
+            hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
+            # Insert admin user
+            cursor.execute(
+                "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+                (admin_username, admin_email, hashed_password)
+            )
+            print(f"Admin user created: {admin_email}")
 
         conn.commit()
         print("SQLite database initialized successfully")

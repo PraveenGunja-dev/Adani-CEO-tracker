@@ -7,12 +7,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/application#analytics';
@@ -23,32 +21,20 @@ export default function LoginPage() {
     setError('');
     
     try {
-      if (isRegistering) {
-        // Validate input
-        if (!username.trim()) {
-          throw new Error('Username is required');
-        }
-        
-        const result = await register(username, email, password);
-        if (!result.success) {
-          throw new Error(result.error);
-        }
-      } else {
-        const result = await login(email, password);
-        if (!result.success) {
-          throw new Error(result.error);
-        }
-        
-        // Set flag to show tracker after login if coming from analytics page
-        if (redirect.includes('application')) {
-          localStorage.setItem('showTrackerAfterLogin', 'true');
-        }
-        
-        // Redirect to the intended page
-        router.push(redirect);
+      const result = await login(email, password);
+      if (!result.success) {
+        throw new Error(result.error);
       }
+      
+      // Set flag to show tracker after login if coming from analytics page
+      if (redirect.includes('application')) {
+        localStorage.setItem('showTrackerAfterLogin', 'true');
+      }
+      
+      // Redirect to the intended page
+      router.push(redirect);
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -76,10 +62,10 @@ export default function LoginPage() {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-white mb-1">
-            {isRegistering ? 'Create Account' : 'Welcome Back'}
+            Welcome Back
           </h2>
           <p className="text-blue-100">
-            {isRegistering ? 'Sign up to get started' : 'Sign in to continue'}
+            Sign in to continue
           </p>
         </div>
         
@@ -98,30 +84,6 @@ export default function LoginPage() {
           
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            {isRegistering && (
-              <div className="mb-4">
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Username
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0B74B0] focus:border-[#0B74B0] dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="Enter your username"
-                    required={isRegistering}
-                  />
-                </div>
-              </div>
-            )}
-            
             <div className="mb-4">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email Address
@@ -178,28 +140,13 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  {isRegistering ? 'Creating Account...' : 'Signing In...'}
+                  Signing In...
                 </span>
               ) : (
-                isRegistering ? 'Create Account' : 'Sign In'
+                'Sign In'
               )}
             </button>
           </form>
-          
-          {/* Toggle between login and register */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setError('');
-              }}
-              className="text-[#0B74B0] hover:text-[#0B74B0]/80 dark:text-[#75479C] dark:hover:text-[#75479C]/80 font-medium text-sm"
-            >
-              {isRegistering 
-                ? 'Already have an account? Sign In' 
-                : "Don't have an account? Sign Up"}
-            </button>
-          </div>
         </div>
         
         {/* Footer */}

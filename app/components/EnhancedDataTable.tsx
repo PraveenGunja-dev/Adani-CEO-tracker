@@ -355,7 +355,7 @@ return (
       {/* Filter Section */}
       <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <div>
-          <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Group</label>
+          <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Group</label>
           <CustomDropdown
             options={['', ...groups]}
             value={filters.group}
@@ -365,7 +365,7 @@ return (
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-foreground dark:text-white mb-1">PPA/Merchant</label>
+          <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">PPA/Merchant</label>
           <CustomDropdown
             options={['', ...ppaMerchants]}
             value={filters.ppaMerchant}
@@ -375,7 +375,7 @@ return (
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Type</label>
+          <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Type</label>
           <CustomDropdown
             options={['', ...types]}
             value={filters.type}
@@ -385,7 +385,7 @@ return (
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Location Code</label>
+          <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Location Code</label>
           <CustomDropdown
             options={['', ...locationCodes]}
             value={filters.locationCode}
@@ -395,7 +395,7 @@ return (
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Location</label>
+          <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Location</label>
           <CustomDropdown
             options={['', ...locations]}
             value={filters.location}
@@ -405,7 +405,7 @@ return (
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-foreground dark:text-white mb-1">Connectivity</label>
+          <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Connectivity</label>
           <CustomDropdown
             options={['', ...connectivities]}
             value={filters.connectivity}
@@ -416,11 +416,11 @@ return (
       </div>
 
       {/* Data Summary */}
-      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-        <p className="text-sm text-foreground dark:text-white">
+      <div className="mb-4 p-4 bg-muted dark:bg-muted rounded-lg">
+        <p className="text-sm text-foreground dark:text-foreground">
           Showing <span className="font-semibold">{filteredData.length}</span> of <span className="font-semibold">{data.length}</span> records
         </p>
-        <p className="text-sm text-foreground dark:text-white">
+        <p className="text-sm text-foreground dark:text-foreground">
           Fiscal Year: <span className="font-semibold">{fiscalYear}</span>
         </p>
       </div>
@@ -429,43 +429,43 @@ return (
       <table className="min-w-full border-separate border-spacing-0">
         <thead>
           <tr>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter sm:pl-6 lg:pl-8">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter sm:pl-6 lg:pl-8">
               S.No
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               Capacity
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               Group
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               PPA/Merchant
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               Type
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               Solar
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               Wind
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               SPV
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               Location Code
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               Location
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               PSS
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-white backdrop-blur-sm backdrop-filter">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header px-3 py-3.5 text-left text-sm font-semibold text-foreground dark:text-foreground backdrop-blur-sm backdrop-filter">
               Connectivity
             </th>
-            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-gray-700 bg-table-header dark:bg-[#171717] py-3.5 pl-3 pr-4 backdrop-blur-sm backdrop-filter sm:pr-6 lg:pr-8">
+            <th scope="col" className="sticky top-0 z-10 border-b border-table-border dark:border-border bg-table-header dark:bg-table-header py-3.5 pl-3 pr-4 backdrop-blur-sm backdrop-filter sm:pr-6 lg:pr-8">
               Actions
             </th>
           </tr>
@@ -686,9 +686,9 @@ return (
 
       {filteredData.length === 0 && (
         <div className="text-center py-10">
-          <p className="text-foreground dark:text-white">No data found matching the current filters.</p>
+          <p className="text-foreground dark:text-foreground">No data found matching the current filters.</p>
         </div>
-      )}
+      )
     </div>
   </div>
 );
