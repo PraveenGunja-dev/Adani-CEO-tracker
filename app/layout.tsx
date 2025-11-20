@@ -11,7 +11,7 @@ const adani = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Adani Excel Data Management",
+  title: "AGEL CEO Tracker",
   description: "Manage energy data with Excel export functionality",
 };
 

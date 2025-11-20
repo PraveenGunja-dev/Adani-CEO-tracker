@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { API_BASE_URL } from '@/lib/config';
 
 // Handle CORS preflight OPTIONS request
 export async function OPTIONS() {
@@ -29,18 +30,35 @@ export async function POST(request: Request) {
       );
     }
     
-    // For API implementation, we'll need to make a request to the backend
-    // Since the FastAPI backend doesn't have a specific login endpoint,
-    // we'll return a not implemented response for now
-    return NextResponse.json(
-      { error: 'Login not implemented in API mode' },
-      { 
-        status: 501,
+    // Call FastAPI backend
+    const response = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, {
+        status: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
         },
-      }
-    );
+      });
+    } else {
+      return NextResponse.json(
+        { error: data.detail || 'Login failed' },
+        { 
+          status: response.status,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
   } catch (error: any) {
     console.error('Login error:', error);
     

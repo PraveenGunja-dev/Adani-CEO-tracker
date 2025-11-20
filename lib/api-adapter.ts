@@ -1,9 +1,9 @@
 // API adapter to connect to the FastAPI backend
 // This replaces the mock implementation with actual HTTP requests to the backend
 import { API_BASE_URL } from '@/lib/config';
-
+ 
 const isServer = typeof window === 'undefined';
-
+ 
 // Helper function to make API requests
 async function apiRequest(url: string, options: RequestInit = {}) {
   const fullUrl = `${API_BASE_URL}${url}`;
@@ -14,14 +14,14 @@ async function apiRequest(url: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
-  
+ 
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
-  
+ 
   return response.json();
 }
-
+ 
 export async function connectToDatabase() {
   // This is a no-op for API-based implementation
   return {
@@ -34,17 +34,17 @@ export async function connectToDatabase() {
               if (name === 'tableData') {
                 const fiscalYear = query.fiscalYear;
                 // Make actual HTTP request to backend
-                const result = await apiRequest(`/table-data?fiscalYear=${fiscalYear}`);
+                const result = await apiRequest(`table-data?fiscalYear=${fiscalYear}`);
                 return result;
               } else if (name === 'dropdownOptions') {
                 const fiscalYear = query.fiscalYear;
                 // Make actual HTTP request to backend
-                const result = await apiRequest(`/dropdown-options?fiscalYear=${fiscalYear}`);
+                const result = await apiRequest(`dropdown-options?fiscalYear=${fiscalYear}`);
                 return result;
               } else if (name === 'locationRelationships') {
                 const fiscalYear = query.fiscalYear;
                 // Make actual HTTP request to backend
-                const result = await apiRequest(`/location-relationships?fiscalYear=${fiscalYear}`);
+                const result = await apiRequest(`location-relationships?fiscalYear=${fiscalYear}`);
                 return result;
               }
               return null;
@@ -53,25 +53,25 @@ export async function connectToDatabase() {
               return null;
             }
           },
-
+ 
           // Update or insert a document
           updateOne: async (filter: any, update: any, options: any) => {
             try {
               if (name === 'tableData') {
                 const fiscalYear = filter.fiscalYear;
                 const data = update.$set.data;
-                
+               
                 // Make actual HTTP request to backend
-                const result = await apiRequest(`/table-data`, {
+                const result = await apiRequest(`table-data`, {
                   method: 'POST',
                   body: JSON.stringify({ fiscalYear, data }),
                 });
-                
+               
                 return { modifiedCount: 1 };
               } else if (name === 'dropdownOptions') {
                 const optionsData = update.$set;
                 // Make actual HTTP request to backend
-                const result = await apiRequest(`/dropdown-options`, {
+                const result = await apiRequest(`dropdown-options`, {
                   method: 'POST',
                   body: JSON.stringify(optionsData),
                 });
@@ -80,7 +80,7 @@ export async function connectToDatabase() {
                 const relationships = update.$set.relationships;
                 const fiscalYear = update.$set.fiscalYear || 'FY_25';
                 // Make actual HTTP request to backend
-                const result = await apiRequest(`/location-relationships?fiscalYear=${fiscalYear}`, {
+                const result = await apiRequest(`location-relationships?fiscalYear=${fiscalYear}`, {
                   method: 'POST',
                   body: JSON.stringify(relationships),
                 });
@@ -92,14 +92,14 @@ export async function connectToDatabase() {
               throw error;
             }
           },
-
+ 
           // Delete one document
           deleteOne: async (filter: any) => {
             try {
               if (name === 'tableData') {
                 const fiscalYear = filter.fiscalYear;
                 // Make actual HTTP request to backend
-                await apiRequest(`/table-data?fiscalYear=${fiscalYear}`, {
+                await apiRequest(`table-data?fiscalYear=${fiscalYear}`, {
                   method: 'DELETE',
                 });
                 return { deletedCount: 1 };
@@ -110,7 +110,7 @@ export async function connectToDatabase() {
               return { deletedCount: 0 };
             }
           },
-
+ 
           // Insert one document
           insertOne: async (doc: any) => {
             // For now, we'll just return a mock result
@@ -121,9 +121,11 @@ export async function connectToDatabase() {
     }
   };
 }
-
+ 
 // Mock disconnect function (API connections don't need explicit disconnection)
 export async function disconnectFromDatabase() {
   // API connections are stateless
   return Promise.resolve();
 }
+ 
+ 

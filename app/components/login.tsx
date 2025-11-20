@@ -15,10 +15,17 @@ const ShuffleHero = () => {
             className="h-16 object-contain"
           />
         </div>
-        
-        <h1 className="text-4xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mt-8 mb-6">
-          Asset Commenting
-        </h1>
+ <h1
+  className="
+    text-4xl md:text-4xl lg:text-5xl font-extrabold mt-8 mb-6
+    text-gray-900 dark:text-white
+    drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]
+    dark:drop-shadow-[0_0_12px_rgba(59,130,246,0.8)]
+  "
+>
+  CEO Dashboard
+</h1>
+
       </div>
       <ShuffleGrid />
     </section>

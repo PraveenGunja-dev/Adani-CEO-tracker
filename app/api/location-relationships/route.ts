@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/api-adapter';
+import { API_BASE_URL } from '@/lib/config';
 
 // Define the structure for location relationships
 interface LocationRelationship {
@@ -19,21 +19,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const fiscalYear = searchParams.get('fiscalYear') || 'FY_25'; // Default to FY_25
     
-    const { db } = await connectToDatabase();
-    
-    // Get the location relationships document for the specific fiscal year
-    const relationshipsDoc = await db.collection('locationRelationships').findOne({ fiscalYear }) as LocationRelationshipsDocument | null;
-    
-    if (relationshipsDoc && relationshipsDoc.relationships) {
-      return NextResponse.json(relationshipsDoc.relationships, { status: 200 });
+    // Call FastAPI backend to get location relationships
+    const response = await fetch(`${API_BASE_URL}/location-relationships?fiscalYear=${encodeURIComponent(fiscalYear)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
     } else {
-      // Return default relationships if none exist
-      const defaultRelationships: LocationRelationship[] = [
-        { location: 'Khavda', locationCode: 'Khavda' },
-        { location: 'Baap', locationCode: 'RJ' },
-        { location: 'Essel', locationCode: 'RJ' }
-      ];
-      return NextResponse.json(defaultRelationships, { status: 200 });
+      return NextResponse.json(
+        { error: data.detail || 'Failed to get location relationships' },
+        { status: response.status }
+      );
     }
   } catch (error: any) {
     console.error('Error getting location relationships:', error);
@@ -60,16 +62,35 @@ export async function POST(request: Request) {
       );
     }
     
-    const { db } = await connectToDatabase();
+    // Validate each relationship object
+    for (const rel of relationships) {
+      if (typeof rel.location !== 'string' || typeof rel.locationCode !== 'string') {
+        return NextResponse.json(
+          { error: 'Each relationship must have location and locationCode as strings' },
+          { status: 400 }
+        );
+      }
+    }
     
-    // Update or insert the location relationships document for the specific fiscal year
-    const result = await db.collection('locationRelationships').updateOne(
-      { fiscalYear },
-      { $set: { fiscalYear, relationships, updatedAt: new Date() } },
-      { upsert: true }
-    );
-    
-    return NextResponse.json(relationships, { status: 200 });
+    // Call FastAPI backend to update location relationships
+    const response = await fetch(`${API_BASE_URL}/location-relationships?fiscalYear=${encodeURIComponent(fiscalYear)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(relationships),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to update location relationships' },
+        { status: response.status }
+      );
+    }
   } catch (error: any) {
     console.error('Error updating location relationships:', error);
     return NextResponse.json(

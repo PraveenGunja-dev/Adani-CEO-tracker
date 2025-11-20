@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/api-adapter';
+import { API_BASE_URL } from '@/lib/config';
 
 // Define the structure for dropdown options
 interface DropdownOptions {
@@ -18,25 +18,23 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const fiscalYear = searchParams.get('fiscalYear') || 'FY_25'; // Default to FY_25
     
-    const { db } = await connectToDatabase();
-    
-    // Get the dropdown options document for the specific fiscal year
-    const options = await db.collection('dropdownOptions').findOne({ fiscalYear });
-    
-    if (options) {
-      // For SQLite implementation, options are already in the correct format
-      return NextResponse.json(options, { status: 200 });
+    // Call FastAPI backend to get dropdown options
+    const response = await fetch(`${API_BASE_URL}/dropdown-options?fiscalYear=${encodeURIComponent(fiscalYear)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
     } else {
-      // Return default options if none exist
-      const defaultOptions: Omit<DropdownOptions, 'fiscalYear'> = {
-        groups: ['AGEL', 'ACL'],
-        ppaMerchants: ['PPA', 'Merchant'],
-        types: ['Solar', 'Wind', 'Hybrid'],
-        locationCodes: ['Khavda', 'RJ'],
-        locations: ['Khavda', 'Baap', 'Essel'],
-        connectivities: ['CTU']
-      };
-      return NextResponse.json(defaultOptions, { status: 200 });
+      return NextResponse.json(
+        { error: data.detail || 'Failed to get dropdown options' },
+        { status: response.status }
+      );
     }
   } catch (error: any) {
     console.error('Error getting dropdown options:', error);
@@ -51,10 +49,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const options: DropdownOptions = await request.json();
-    const { fiscalYear = 'FY_25', ...dropdownOptions } = options;
-    
-    // Log the incoming options for debugging
-    console.log('Received dropdown options:', options);
     
     // Validate input
     if (!options) {
@@ -64,37 +58,34 @@ export async function POST(request: Request) {
       );
     }
     
-    const { db } = await connectToDatabase();
+    // Ensure all required fields are present
+    const validatedOptions: DropdownOptions = {
+      fiscalYear: options.fiscalYear || 'FY_25',
+      groups: Array.isArray(options.groups) ? options.groups : [],
+      ppaMerchants: Array.isArray(options.ppaMerchants) ? options.ppaMerchants : [],
+      types: Array.isArray(options.types) ? options.types : [],
+      locationCodes: Array.isArray(options.locationCodes) ? options.locationCodes : [],
+      locations: Array.isArray(options.locations) ? options.locations : [],
+      connectivities: Array.isArray(options.connectivities) ? options.connectivities : []
+    };
     
-    // Log database connection for debugging
-    console.log('Connected to database');
-    
-    // Update or insert dropdown options for the specific fiscal year
-    const result: any = await db.collection('dropdownOptions').updateOne(
-      { fiscalYear },
-      { 
-        $set: { 
-          fiscalYear,
-          ...dropdownOptions,
-          updatedAt: new Date()
-        }
+    // Call FastAPI backend to update dropdown options
+    const response = await fetch(`${API_BASE_URL}/dropdown-options`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      { upsert: true }
-    );
-    
-    // Log update result for debugging
-    console.log('Update result:', result);
-    
-    // Check if the operation was successful
-    const success = (result.modifiedCount !== undefined && result.modifiedCount >= 0) || 
-                   (result.upsertedCount !== undefined && result.upsertedCount >= 0);
-    
-    if (success) {
-      return NextResponse.json(dropdownOptions, { status: 200 });
+      body: JSON.stringify(validatedOptions),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
     } else {
       return NextResponse.json(
-        { error: 'Failed to update dropdown options' },
-        { status: 500 }
+        { error: data.detail || 'Failed to update dropdown options' },
+        { status: response.status }
       );
     }
   } catch (error: any) {

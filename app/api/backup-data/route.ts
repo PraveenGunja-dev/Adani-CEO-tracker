@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/api-adapter';
+import { API_BASE_URL } from '@/lib/config';
 
 // GET /api/backup-data?fiscalYear=xxx - Get backup data for a specific fiscal year
 export async function GET(request: Request) {
@@ -7,17 +7,24 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const fiscalYear = searchParams.get('fiscalYear') || 'FY_25';
 
-    // For API implementation, we'll need to make a request to the backend
-    // Since the FastAPI backend doesn't have a specific backup endpoint,
-    // we'll return an empty response for now
-    return NextResponse.json(
-      {
-        fiscalYear,
-        backups: [],
-        count: 0
+    // Call FastAPI backend to get backup data
+    const response = await fetch(`${API_BASE_URL}/backup-data?fiscalYear=${encodeURIComponent(fiscalYear)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      { status: 200 }
-    );
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to get backup data' },
+        { status: response.status }
+      );
+    }
   } catch (error: any) {
     console.error('Error getting backup data:', error);
     return NextResponse.json(
@@ -39,13 +46,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // For API implementation, we'll need to make a request to the backend
-    // Since the FastAPI backend doesn't have a specific backup restore endpoint,
-    // we'll return a not implemented response for now
-    return NextResponse.json(
-      { error: 'Backup restore not implemented in API mode' },
-      { status: 501 }
-    );
+    // Call FastAPI backend to restore backup data
+    const response = await fetch(`${API_BASE_URL}/backup-data/restore`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ fiscalYear, version }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to restore backup data' },
+        { status: response.status }
+      );
+    }
   } catch (error: any) {
     console.error('Error restoring backup data:', error);
     return NextResponse.json(
@@ -69,13 +88,24 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // For API implementation, we'll need to make a request to the backend
-    // Since the FastAPI backend doesn't have a specific backup delete endpoint,
-    // we'll return a not implemented response for now
-    return NextResponse.json(
-      { error: 'Backup delete not implemented in API mode' },
-      { status: 501 }
-    );
+    // Call FastAPI backend to delete backup data
+    const response = await fetch(`${API_BASE_URL}/backup-data?fiscalYear=${encodeURIComponent(fiscalYear)}&version=${encodeURIComponent(version)}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to delete backup data' },
+        { status: response.status }
+      );
+    }
   } catch (error: any) {
     console.error('Error deleting backup data:', error);
     return NextResponse.json(

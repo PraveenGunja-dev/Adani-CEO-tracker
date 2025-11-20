@@ -32,7 +32,8 @@ if NEXT_PUBLIC_DIR.exists():
 # Create an HTTP client for proxying requests with proper handling of compressed content
 http_client = httpx.AsyncClient(
     base_url="http://localhost:3000",
-    headers={"Accept-Encoding": "identity"}  # Disable compression to avoid encoding issues
+    headers={"Accept-Encoding": "identity"},
+    verify= False  # Disable compression to avoid encoding issues
 )
 
 # API endpoint for table data - proxy to Next.js
@@ -178,4 +179,4 @@ async def serve_page(path: str, request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8004)
+    uvicorn.run(app, host="0.0.0.0", port=8005) # http://localhost:8005

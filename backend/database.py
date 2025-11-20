@@ -38,7 +38,6 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS dropdown_options (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                fiscal_year TEXT NOT NULL DEFAULT 'FY_25',
                 option_type TEXT NOT NULL,
                 option_value TEXT NOT NULL,
                 version INTEGER DEFAULT 1,
@@ -88,9 +87,8 @@ def init_db():
         # Indexes
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_table_data_fiscal_year ON table_data(fiscal_year)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_table_data_fiscal_year_deleted ON table_data(fiscal_year, is_deleted)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_dropdown_options_fiscal_year ON dropdown_options(fiscal_year)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_dropdown_options_type ON dropdown_options(option_type)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS idx_dropdown_options_fiscal_year_deleted ON dropdown_options(fiscal_year, is_deleted)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_dropdown_options_type_deleted ON dropdown_options(option_type, is_deleted)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_location_relationships_fiscal_year ON location_relationships(fiscal_year)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_location_relationships_fiscal_year_deleted ON location_relationships(fiscal_year, is_deleted)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_variables_key_user ON variables(key, user_id)')

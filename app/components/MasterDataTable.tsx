@@ -31,20 +31,21 @@ export default function MasterDataTable() {
 
   // State for dropdown management
   const [dropdownOptions, setDropdownOptions] = useState<DropdownOptions>({
-    groups: ['AGEL', 'ACL'],
-    ppaMerchants: ['PPA', 'Merchant'],
-    types: ['Solar', 'Wind', 'Hybrid'],
-    locationCodes: ['Khavda', 'RJ'],
-    locations: ['Khavda', 'Baap', 'Essel'],
-    connectivities: ['CTU']
+    groups: [],
+    ppaMerchants: [],
+    types: [],
+    locationCodes: [],
+    locations: [],
+    connectivities: []
   });
 
+  // Debug effect to log when dropdownOptions changes
+  useEffect(() => {
+    console.log('dropdownOptions updated:', dropdownOptions);
+  }, [dropdownOptions]);
+
   // State for location relationships
-  const [locationRelationships, setLocationRelationships] = useState<LocationRelationship[]>([
-    { location: 'Khavda', locationCode: 'Khavda' },
-    { location: 'Baap', locationCode: 'RJ' },
-    { location: 'Essel', locationCode: 'RJ' }
-  ]);
+  const [locationRelationships, setLocationRelationships] = useState<LocationRelationship[]>([]);
 
   // State for tracking initial load
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -62,6 +63,7 @@ export default function MasterDataTable() {
     value: string;
   } | null>(null);
 
+  
   // State for adding new location relationships
   const [newRelationship, setNewRelationship] = useState<LocationRelationship>({
     location: '',
@@ -74,32 +76,132 @@ export default function MasterDataTable() {
     relationship: LocationRelationship;
   } | null>(null);
 
+  // State for confirmation dialog
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+  } | null>(null);
+
   // Load dropdown options and location relationships from SQLite
   useEffect(() => {
     const loadMasterData = async () => {
       try {
-        // Load dropdown options
-        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
-        if (response.ok) {
-          const options = await response.json();
-          // Ensure all options are arrays
-          setDropdownOptions({
-            groups: Array.isArray(options.groups) ? options.groups : ['AGEL', 'ACL'],
-            ppaMerchants: Array.isArray(options.ppaMerchants) ? options.ppaMerchants : ['PPA', 'Merchant'],
-            types: Array.isArray(options.types) ? options.types : ['Solar', 'Wind', 'Hybrid'],
-            locationCodes: Array.isArray(options.locationCodes) ? options.locationCodes : ['Khavda', 'RJ'],
-            locations: Array.isArray(options.locations) ? options.locations : ['Khavda', 'Baap', 'Essel'],
-            connectivities: Array.isArray(options.connectivities) ? options.connectivities : ['CTU']
-          });
-        } else {
-          console.error('Failed to load dropdown options:', response.status, response.statusText);
+        // Load dropdown options separately for each type
+        const groupsResponse = await fetch(`/api/groups`);
+        if (groupsResponse.ok) {
+          const groupsData = await groupsResponse.json();
+          if (Array.isArray(groupsData.groups)) {
+            setDropdownOptions(prev => ({
+              ...prev,
+              groups: groupsData.groups
+            }));
+          }
+        }
+
+        const ppaMerchantsResponse = await fetch(`/api/ppa-merchants`);
+        if (ppaMerchantsResponse.ok) {
+          const ppaMerchantsData = await ppaMerchantsResponse.json();
+          if (Array.isArray(ppaMerchantsData.ppaMerchants)) {
+            setDropdownOptions(prev => ({
+              ...prev,
+              ppaMerchants: ppaMerchantsData.ppaMerchants
+            }));
+          }
+        }
+
+        const typesResponse = await fetch(`/api/types`);
+        if (typesResponse.ok) {
+          const typesData = await typesResponse.json();
+          if (Array.isArray(typesData.types)) {
+            setDropdownOptions(prev => ({
+              ...prev,
+              types: typesData.types
+            }));
+          }
+        }
+
+        const locationCodesResponse = await fetch(`/api/location-codes`);
+        if (locationCodesResponse.ok) {
+          const locationCodesData = await locationCodesResponse.json();
+          if (Array.isArray(locationCodesData.locationCodes)) {
+            setDropdownOptions(prev => ({
+              ...prev,
+              locationCodes: locationCodesData.locationCodes
+            }));
+          }
+        }
+
+        const locationsResponse = await fetch(`/api/locations`);
+        if (locationsResponse.ok) {
+          const locationsData = await locationsResponse.json();
+          if (Array.isArray(locationsData.locations)) {
+            setDropdownOptions(prev => ({
+              ...prev,
+              locations: locationsData.locations
+            }));
+          }
+        }
+
+        const connectivitiesResponse = await fetch(`/api/connectivities`);
+        if (connectivitiesResponse.ok) {
+          const connectivitiesData = await connectivitiesResponse.json();
+          if (Array.isArray(connectivitiesData.connectivities)) {
+            setDropdownOptions(prev => ({
+              ...prev,
+              connectivities: connectivitiesData.connectivities
+            }));
+          }
         }
 
         // Load location relationships
-        const relResponse = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`);
+        const relResponse = await fetch(`/api/// ... existing code ...
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
+                  <SearchableDropdown
+                    options={locations}
+                    value={newRow.location}
+                    onChange={(value) => {
+                      const location = value;
+                      // Set location code based on location selection
+                      let locationCode = '';
+                      const relationship = locationRelationships.find(rel => rel.location === location);
+                      locationCode = relationship ? relationship.locationCode : '';
+                      setNewRow({...newRow, location, locationCode});
+                    }}
+                    onAddNew={(value) => {
+                      // For new locations, we'll let the user specify the location code
+                      saveDropdownOption('locations', value);
+                      setNewRow({...newRow, location: value});
+                      // Don't automatically set locationCode - let user enter it manually
+                    }}
+                    placeholder="Select or type location..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location Code</label>
+                  <div className="relative">
+                    <SearchableDropdown
+                      options={locationCodes}
+                      value={newRow.locationCode}
+                      onChange={(value) => setNewRow({...newRow, locationCode: value})}
+                      onAddNew={(value) => {
+                        // Allow user to add new location code
+                        saveDropdownOption('locationCodes', value);
+                        setNewRow({...newRow, locationCode: value});
+                      }}
+                      placeholder="Select or type location code..."
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  </div>
+                </div>
+// ... existing code ...lationships`);
         if (relResponse.ok) {
           const relationships = await relResponse.json();
-          if (Array.isArray(relationships) && relationships.length > 0) {
+          console.log('Loaded location relationships:', relationships); // Debug log
+          if (Array.isArray(relationships)) {
             setLocationRelationships(relationships);
           }
         }
@@ -107,29 +209,95 @@ export default function MasterDataTable() {
         console.error('Error loading master data:', error.message || error);
       } finally {
         // Mark initial load as complete
+        console.log('Setting isInitialLoad to false'); // Debug log
         setIsInitialLoad(false);
       }
     };
 
     loadMasterData();
-  }, []);
+  }, [fiscalYear]);
 
   // Save dropdown options and location relationships to SQLite
   useEffect(() => {
     const saveMasterData = async () => {
       try {
-        // Save dropdown options
-        const response = await fetch(`/api/dropdown-options`, {
+        // Save dropdown options separately for each type
+        const groupsResponse = await fetch(`/api/groups`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(dropdownOptions),
+          body: JSON.stringify(dropdownOptions.groups),
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Failed to save dropdown options:', response.status, response.statusText, errorText);
+        if (!groupsResponse.ok) {
+          const errorText = await groupsResponse.text();
+          console.error('Failed to save groups:', groupsResponse.status, groupsResponse.statusText, errorText);
+        }
+
+        const ppaMerchantsResponse = await fetch(`/api/ppa-merchants`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dropdownOptions.ppaMerchants),
+        });
+
+        if (!ppaMerchantsResponse.ok) {
+          const errorText = await ppaMerchantsResponse.text();
+          console.error('Failed to save ppa merchants:', ppaMerchantsResponse.status, ppaMerchantsResponse.statusText, errorText);
+        }
+
+        const typesResponse = await fetch(`/api/types`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dropdownOptions.types),
+        });
+
+        if (!typesResponse.ok) {
+          const errorText = await typesResponse.text();
+          console.error('Failed to save types:', typesResponse.status, typesResponse.statusText, errorText);
+        }
+
+        const locationCodesResponse = await fetch(`/api/location-codes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dropdownOptions.locationCodes),
+        });
+
+        if (!locationCodesResponse.ok) {
+          const errorText = await locationCodesResponse.text();
+          console.error('Failed to save location codes:', locationCodesResponse.status, locationCodesResponse.statusText, errorText);
+        }
+
+        const locationsResponse = await fetch(`/api/locations`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dropdownOptions.locations),
+        });
+
+        if (!locationsResponse.ok) {
+          const errorText = await locationsResponse.text();
+          console.error('Failed to save locations:', locationsResponse.status, locationsResponse.statusText, errorText);
+        }
+
+        const connectivitiesResponse = await fetch(`/api/connectivities`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dropdownOptions.connectivities),
+        });
+
+        if (!connectivitiesResponse.ok) {
+          const errorText = await connectivitiesResponse.text();
+          console.error('Failed to save connectivities:', connectivitiesResponse.status, connectivitiesResponse.statusText, errorText);
         }
 
         // Save location relationships
@@ -154,7 +322,7 @@ export default function MasterDataTable() {
     if (!isInitialLoad) {
       saveMasterData();
     }
-  }, [dropdownOptions, locationRelationships, isInitialLoad]);
+  }, [dropdownOptions, locationRelationships, isInitialLoad, fiscalYear]);
 
   const handleAddOption = () => {
     if (!user) {
@@ -253,21 +421,63 @@ export default function MasterDataTable() {
       return;
     }
 
-    // Add the location to the locations dropdown if it doesn't exist
-    if (!dropdownOptions.locations.includes(newRelationship.location)) {
-      setDropdownOptions(prev => ({
-        ...prev,
-        locations: [...prev.locations, newRelationship.location]
-      }));
+    // Check if location and location code exist in dropdown options
+    const locationExists = dropdownOptions.locations.includes(newRelationship.location);
+    const locationCodeExists = dropdownOptions.locationCodes.includes(newRelationship.locationCode);
+
+    // If either doesn't exist, show confirmation dialog
+    if (!locationExists || !locationCodeExists) {
+      const missingItems = [];
+      if (!locationExists) missingItems.push(`location "${newRelationship.location}"`);
+      if (!locationCodeExists) missingItems.push(`location code "${newRelationship.locationCode}"`);
+      
+      const message = `The following items will be added to the dropdown options:
+- ${missingItems.join('\n- ')}
+
+Do you want to proceed?`;
+      
+      setConfirmDialog({
+        isOpen: true,
+        message,
+        onConfirm: () => {
+          // Add missing items to dropdown options
+          setDropdownOptions(prev => {
+            const updatedOptions = { ...prev };
+            if (!locationExists) {
+              updatedOptions.locations = [...prev.locations, newRelationship.location];
+            }
+            if (!locationCodeExists) {
+              updatedOptions.locationCodes = [...prev.locationCodes, newRelationship.locationCode];
+            }
+            return updatedOptions;
+          });
+          
+          // Add the relationship
+          setLocationRelationships([...locationRelationships, newRelationship]);
+          
+          // Reset form
+          setNewRelationship({
+            location: '',
+            locationCode: ''
+          });
+          
+          // Close dialog
+          setConfirmDialog(null);
+        },
+        onCancel: () => {
+          setConfirmDialog(null);
+        }
+      });
+    } else {
+      // Both exist, just add the relationship
+      setLocationRelationships([...locationRelationships, newRelationship]);
+      
+      // Reset form
+      setNewRelationship({
+        location: '',
+        locationCode: ''
+      });
     }
-
-    setLocationRelationships([...locationRelationships, newRelationship]);
-
-    // Reset form
-    setNewRelationship({
-      location: '',
-      locationCode: ''
-    });
   };
 
   const handleEditRelationship = () => {
@@ -306,6 +516,38 @@ export default function MasterDataTable() {
 
   return (
     <div className="dark:bg-[#171717]">
+      {/* Debug info */}
+      <div className="hidden">
+        {/* This is for debugging purposes only - will not be visible */}
+        <pre>{JSON.stringify(dropdownOptions, null, 2)}</pre>
+        <pre>{JSON.stringify(locationRelationships, null, 2)}</pre>
+        <pre>isInitialLoad: {isInitialLoad.toString()}</pre>
+      </div>
+      
+      {/* Confirmation Dialog */}
+      {confirmDialog && confirmDialog.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Action</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6 whitespace-pre-line">{confirmDialog.message}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={confirmDialog.onCancel}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Tab Navigation */}
       <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
         <nav className="flex space-x-8">
@@ -434,7 +676,7 @@ export default function MasterDataTable() {
                                     title="Cancel"
                                   >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L8 12.586l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                                     </svg>
                                   </button>
                                 </div>
@@ -511,12 +753,25 @@ export default function MasterDataTable() {
                   value={newRelationship.location}
                   onChange={(value: string) => setNewRelationship(prev => ({ ...prev, location: value }))}
                   onAddNew={(value: string) => {
-                    // Add new location to dropdown options
-                    setDropdownOptions(prev => ({
-                      ...prev,
-                      locations: [...prev.locations, value]
-                    }));
-                    setNewRelationship(prev => ({ ...prev, location: value }));
+                    // Show confirmation dialog before adding new location
+                    const message = `The location "${value}" will be added to the dropdown options.\n\nDo you want to proceed?`;
+                    setConfirmDialog({
+                      isOpen: true,
+                      message,
+                      onConfirm: () => {
+                        // Add new location to dropdown options
+                        setDropdownOptions(prev => ({
+                          ...prev,
+                          locations: [...prev.locations, value]
+                        }));
+                        setNewRelationship(prev => ({ ...prev, location: value }));
+                        // Close dialog
+                        setConfirmDialog(null);
+                      },
+                      onCancel: () => {
+                        setConfirmDialog(null);
+                      }
+                    });
                   }}
                   placeholder="Location"
                   className="flex-1 px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0B74B0]"
@@ -526,12 +781,25 @@ export default function MasterDataTable() {
                   value={newRelationship.locationCode}
                   onChange={(value: string) => setNewRelationship(prev => ({ ...prev, locationCode: value }))}
                   onAddNew={(value: string) => {
-                    // Add new location code to dropdown options
-                    setDropdownOptions(prev => ({
-                      ...prev,
-                      locationCodes: [...prev.locationCodes, value]
-                    }));
-                    setNewRelationship(prev => ({ ...prev, locationCode: value }));
+                    // Show confirmation dialog before adding new location code
+                    const message = `The location code "${value}" will be added to the dropdown options.\n\nDo you want to proceed?`;
+                    setConfirmDialog({
+                      isOpen: true,
+                      message,
+                      onConfirm: () => {
+                        // Add new location code to dropdown options
+                        setDropdownOptions(prev => ({
+                          ...prev,
+                          locationCodes: [...prev.locationCodes, value]
+                        }));
+                        setNewRelationship(prev => ({ ...prev, locationCode: value }));
+                        // Close dialog
+                        setConfirmDialog(null);
+                      },
+                      onCancel: () => {
+                        setConfirmDialog(null);
+                      }
+                    });
                   }}
                   placeholder="Location Code"
                   className="px-3 py-2 rounded-md border border-input-border dark:border-gray-600 bg-input-background dark:bg-[#171717] text-foreground dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#0B74B0]"

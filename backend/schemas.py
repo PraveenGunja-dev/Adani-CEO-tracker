@@ -1,10 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict, Any, Union
+
 
 class TableRow(BaseModel):
     id: int
     sno: int
-    capacity: float
+    capacity: Optional[float] = None
     group: str
     ppaMerchant: str
     type: str
@@ -47,6 +48,30 @@ class User(BaseModel):
     username: str
     email: str
     password: str
+
+# For user registration (password will be hashed)
+class UserRegister(BaseModel):
+    username: str
+    email: str
+    password: str
+
+# For user login
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+# For user response (without password)
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    created_at: str
+
+# For login response
+class LoginResponse(BaseModel):
+    user: UserResponse
+    access_token: str
+    token_type: str = "bearer"
 
 class Variable(BaseModel):
     key: str

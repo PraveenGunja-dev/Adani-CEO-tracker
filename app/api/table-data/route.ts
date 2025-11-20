@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/api-adapter';
+import { API_BASE_URL } from '@/lib/config';
 
 // Validate table row structure
 function validateTableRow(row: any): string | null {
@@ -72,14 +72,24 @@ export async function GET(request: Request) {
       );
     }
     
-    const { db } = await connectToDatabase();
-    const tableData = await db.collection('tableData').findOne({ fiscalYear }) as { data: any[] } | null;
-    
-    // Return empty array if no data found
-    return NextResponse.json(
-      { data: tableData?.data ?? [] },
-      { status: 200 }
-    );
+    // Call FastAPI backend to get table data
+    const response = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${encodeURIComponent(fiscalYear)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: data.detail || 'Failed to get table data' },
+        { status: response.status }
+      );
+    }
   } catch (error: any) {
     console.error('Error getting table data:', error);
     return NextResponse.json(
@@ -94,8 +104,6 @@ export async function POST(request: Request) {
   try {
     const { fiscalYear, data } = await request.json();
     
-    console.log(`Received POST request for fiscal year ${fiscalYear} with data:`, data);
-    
     if (!fiscalYear) {
       return NextResponse.json(
         { error: 'fiscalYear is required' },
@@ -105,7 +113,6 @@ export async function POST(request: Request) {
     
     // Validate data structure
     if (!Array.isArray(data)) {
-      console.error('Invalid data structure - not an array:', data);
       return NextResponse.json(
         { error: 'Data must be an array' },
         { status: 400 }
@@ -117,7 +124,6 @@ export async function POST(request: Request) {
       const row = data[i];
       const validationError = validateTableRow(row);
       if (validationError) {
-        console.error(`Validation error at row ${i + 1}:`, validationError, row);
         return NextResponse.json(
           { error: `Invalid data at row ${i + 1}: ${validationError}` },
           { status: 400 }
@@ -125,35 +131,25 @@ export async function POST(request: Request) {
       }
     }
     
-    console.log(`Data validation passed for fiscal year ${fiscalYear}`);
-    
-    const { db } = await connectToDatabase();
-    
-    // Upsert the table data
-    const result = await db.collection('tableData').updateOne(
-      { fiscalYear },
-      { 
-        $set: { 
-          fiscalYear,
-          data,
-          updatedAt: new Date()
-        }
+    // Call FastAPI backend to save table data
+    const response = await fetch(`${API_BASE_URL}/table-data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-      { upsert: true }
-    );
-    
-    console.log(`Database update result for ${fiscalYear}:`, result);
-    
-    // Get the current version after the update
-    const updatedRecord = await db.collection('tableData').findOne({ fiscalYear }) as { data: any[]; version?: number } | null;
-    const currentVersion = updatedRecord && updatedRecord.version ? updatedRecord.version : 1;
-    
-    console.log(`Updated record for ${fiscalYear}:`, updatedRecord);
-    
-    return NextResponse.json(
-      { message: 'Table data saved successfully', version: currentVersion },
-      { status: 200 }
-    );
+      body: JSON.stringify({ fiscalYear, data }),
+    });
+
+    const responseData = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(responseData, { status: 200 });
+    } else {
+      return NextResponse.json(
+        { error: responseData.detail || 'Failed to save table data' },
+        { status: response.status }
+      );
+    }
   } catch (error: any) {
     console.error('Error saving table data:', error);
     return NextResponse.json(
@@ -163,7 +159,7 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE /api/table-data?fiscalYear=xxx - Soft delete table data for a specific fiscal year
+// DELETE /api/table-data?fiscalYear=xxx - Delete table data for a specific fiscal year
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -176,33 +172,23 @@ export async function DELETE(request: Request) {
       );
     }
     
-    const { db } = await connectToDatabase();
-    // Soft delete - mark as deleted instead of removing
-    const result = await db.collection('tableData').deleteOne({ fiscalYear });
-    
-    // For soft delete, we check deletedCount (which represents the number of records marked as deleted)
-    if (result.deletedCount > 0) {
-      return NextResponse.json(
-        { message: 'Table data marked as deleted successfully' },
-        { status: 200 }
-      );
+    // Call FastAPI backend to delete table data
+    const response = await fetch(`${API_BASE_URL}/table-data?fiscalYear=${encodeURIComponent(fiscalYear)}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json(data, { status: 200 });
     } else {
-      // If no records were marked as deleted, it might be because the record doesn't exist
-      // Let's check if the record exists
-      const existing = await db.collection('tableData').findOne({ fiscalYear }) as { data: any[] } | null;
-      if (existing) {
-        // Record exists but wasn't marked as deleted (might already be deleted)
-        return NextResponse.json(
-          { message: 'Table data already marked as deleted' },
-          { status: 200 }
-        );
-      } else {
-        // Record doesn't exist at all
-        return NextResponse.json(
-          { error: 'Table data not found' },
-          { status: 404 }
-        );
-      }
+      return NextResponse.json(
+        { error: data.detail || 'Failed to delete table data' },
+        { status: response.status }
+      );
     }
   } catch (error: any) {
     console.error('Error deleting table data:', error);

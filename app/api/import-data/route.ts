@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/api-adapter';
+import { API_BASE_URL } from '@/lib/config';
 import exDataFY23 from '@/app/components/ex.json';
 import exDataFY24 from '@/app/components/ex_fy25.json';
 import exDataFY25 from '@/app/components/ex_fy26.json';
@@ -41,8 +41,6 @@ const convertToTableRow = (item: any, index: number) => {
 // POST /api/import-data - Import all fiscal year data into the database
 export async function POST(request: Request) {
   try {
-    const { db } = await connectToDatabase();
-    
     // Process each fiscal year with correct mapping
     const fiscalYears = [
       { name: 'FY_23', data: exDataFY23 },  // FY_23 should use ex.json data (84 records)
@@ -64,29 +62,32 @@ export async function POST(request: Request) {
         continue;
       }
       
-      // Insert data into database
-      const result = await db.collection('tableData').updateOne(
-        { fiscalYear: fy.name },
-        { 
-          $set: { 
-            fiscalYear: fy.name,
-            data: convertedData,
-            updatedAt: new Date()
-          }
+      // Call FastAPI backend to import data
+      const response = await fetch(`${API_BASE_URL}/import-data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        { upsert: true }
-      );
-      
-      results.push({ 
-        fiscalYear: fy.name, 
-        message: 'Data imported successfully', 
-        count: convertedData.length,
-        modifiedCount: result.modifiedCount
+        body: JSON.stringify({
+          fiscalYear: fy.name,
+          data: convertedData
+        }),
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        results.push(data);
+      } else {
+        results.push({
+          fiscalYear: fy.name,
+          error: data.detail || 'Failed to import data'
+        });
+      }
     }
     
     return NextResponse.json(
-      { message: 'All fiscal year data imported successfully', results },
+      { message: 'All fiscal year data import process completed', results },
       { status: 200 }
     );
   } catch (error: any) {

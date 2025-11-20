@@ -77,12 +77,12 @@ export default function AnalyticsPage() {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null); // Add this for 3-dot menu
 
   // State for dropdown options
-  const [groups, setGroups] = useState<string[]>(['AGEL', 'ACL']);
-  const [ppaMerchants, setPpaMerchants] = useState<string[]>(['PPA', 'Merchant']);
-  const [types, setTypes] = useState<string[]>(['Solar', 'Wind', 'Hybrid']);
-  const [locationCodes, setLocationCodes] = useState<string[]>(['Khavda', 'RJ']);
-  const [locations, setLocations] = useState<string[]>(['Khavda', 'Baap', 'Essel']);
-  const [connectivities, setConnectivities] = useState<string[]>(['CTU']);
+  const [groups, setGroups] = useState<string[]>([]);
+  const [ppaMerchants, setPpaMerchants] = useState<string[]>([]);
+  const [types, setTypes] = useState<string[]>([]);
+  const [locationCodes, setLocationCodes] = useState<string[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [connectivities, setConnectivities] = useState<string[]>([]);
 
   // State for table filters
   const [filters, setFilters] = useState({
@@ -95,36 +95,66 @@ export default function AnalyticsPage() {
   });
 
   // State for location relationships
-  const [locationRelationships, setLocationRelationships] = useState<LocationRelationship[]>([
-    { location: 'Khavda', locationCode: 'Khavda' },
-    { location: 'Baap', locationCode: 'RJ' },
-    { location: 'Essel', locationCode: 'RJ' }
-  ]);
+  const [locationRelationships, setLocationRelationships] = useState<LocationRelationship[]>([]);
 
   // Load dropdown options and location relationships from API
   useEffect(() => {
     const loadMasterData = async () => {
       try {
-        // Load dropdown options
-        const response = await fetch(`/api/dropdown-options?fiscalYear=${fiscalYear}`);
-        if (response.ok) {
-          const options = await response.json();
-          // Ensure all options are arrays
-          setGroups(Array.isArray(options.groups) ? options.groups : ['AGEL', 'ACL']);
-          setPpaMerchants(Array.isArray(options.ppaMerchants) ? options.ppaMerchants : ['PPA', 'Merchant']);
-          setTypes(Array.isArray(options.types) ? options.types : ['Solar', 'Wind', 'Hybrid']);
-          setLocationCodes(Array.isArray(options.locationCodes) ? options.locationCodes : ['Khavda', 'RJ']);
-          setLocations(Array.isArray(options.locations) ? options.locations : ['Khavda', 'Baap', 'Essel']);
-          setConnectivities(Array.isArray(options.connectivities) ? options.connectivities : ['CTU']);
-        } else {
-          console.error('Failed to load dropdown options:', response.status, response.statusText);
+        // Load dropdown options separately for each type (without fiscalYear)
+        const groupsResponse = await fetch(`/api/groups`);
+        if (groupsResponse.ok) {
+          const groupsData = await groupsResponse.json();
+          if (Array.isArray(groupsData.groups)) {
+            setGroups(groupsData.groups);
+          }
         }
 
-        // Load location relationships
-        const relResponse = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`);
+        const ppaMerchantsResponse = await fetch(`/api/ppa-merchants`);
+        if (ppaMerchantsResponse.ok) {
+          const ppaMerchantsData = await ppaMerchantsResponse.json();
+          if (Array.isArray(ppaMerchantsData.ppaMerchants)) {
+            setPpaMerchants(ppaMerchantsData.ppaMerchants);
+          }
+        }
+
+        const typesResponse = await fetch(`/api/types`);
+        if (typesResponse.ok) {
+          const typesData = await typesResponse.json();
+          if (Array.isArray(typesData.types)) {
+            setTypes(typesData.types);
+          }
+        }
+
+        const locationCodesResponse = await fetch(`/api/location-codes`);
+        if (locationCodesResponse.ok) {
+          const locationCodesData = await locationCodesResponse.json();
+          if (Array.isArray(locationCodesData.locationCodes)) {
+            setLocationCodes(locationCodesData.locationCodes);
+          }
+        }
+
+        const locationsResponse = await fetch(`/api/locations`);
+        if (locationsResponse.ok) {
+          const locationsData = await locationsResponse.json();
+          if (Array.isArray(locationsData.locations)) {
+            setLocations(locationsData.locations);
+          }
+        }
+
+        const connectivitiesResponse = await fetch(`/api/connectivities`);
+        if (connectivitiesResponse.ok) {
+          const connectivitiesData = await connectivitiesResponse.json();
+          if (Array.isArray(connectivitiesData.connectivities)) {
+            setConnectivities(connectivitiesData.connectivities);
+          }
+        }
+
+        // Load location relationships (without fiscalYear)
+        const relResponse = await fetch(`/api/location-relationships`);
         if (relResponse.ok) {
           const relationships = await relResponse.json();
-          if (Array.isArray(relationships) && relationships.length > 0) {
+          if (Array.isArray(relationships)) {
             setLocationRelationships(relationships);
           }
         }
@@ -136,33 +166,109 @@ export default function AnalyticsPage() {
     loadMasterData();
   }, [fiscalYear]);
 
+  // State to track if initial data has been loaded
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Save dropdown options and location relationships to database when they change
+  useEffect(() => {
+    const saveMasterData = async () => {
+      try {
+        // Save dropdown options
+        await saveDropdownOptions();
+        
+        // Save location relationships
+        await saveLocationRelationships();
+      } catch (error: any) {
+        console.error('Error saving master data:', error.message || error);
+      }
+    };
+    
+    // Don't save on initial load
+    if (!isInitialLoad && groups.length > 0 && ppaMerchants.length > 0 && types.length > 0) {
+      saveMasterData();
+    }
+  }, [groups, ppaMerchants, types, locationCodes, locations, connectivities, locationRelationships, isInitialLoad]);
+  
+  // Set initial load to false after first render
+  useEffect(() => {
+    setIsInitialLoad(false);
+  }, []);
+
   // Function to save all dropdown options to API
   const saveDropdownOptions = async () => {
     try {
-      const response = await fetch(`/api/dropdown-options`, {
+      // Save dropdown options separately for each type (without fiscalYear)
+      const groupsResponse = await fetch(`/api/groups`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          fiscalYear,
-          groups,
-          ppaMerchants,
-          types,
-          locationCodes,
-          locations,
-          connectivities
-        })
+        body: JSON.stringify(groups),
       });
-      
-      if (!response.ok) {
-        console.error('Failed to save dropdown options:', response.status, response.statusText);
-        throw new Error(`Failed to save dropdown options: ${response.status} ${response.statusText}`);
+
+      if (!groupsResponse.ok) {
+        console.error('Failed to save groups:', groupsResponse.status, groupsResponse.statusText);
       }
-      
-      const result = await response.json();
-      console.log('Dropdown options saved successfully:', result);
-      return result;
+
+      const ppaMerchantsResponse = await fetch(`/api/ppa-merchants`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ppaMerchants),
+      });
+
+      if (!ppaMerchantsResponse.ok) {
+        console.error('Failed to save ppa merchants:', ppaMerchantsResponse.status, ppaMerchantsResponse.statusText);
+      }
+
+      const typesResponse = await fetch(`/api/types`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(types),
+      });
+
+      if (!typesResponse.ok) {
+        console.error('Failed to save types:', typesResponse.status, typesResponse.statusText);
+      }
+
+      const locationCodesResponse = await fetch(`/api/location-codes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(locationCodes),
+      });
+
+      if (!locationCodesResponse.ok) {
+        console.error('Failed to save location codes:', locationCodesResponse.status, locationCodesResponse.statusText);
+      }
+
+      const locationsResponse = await fetch(`/api/locations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(locations),
+      });
+
+      if (!locationsResponse.ok) {
+        console.error('Failed to save locations:', locationsResponse.status, locationsResponse.statusText);
+      }
+
+      const connectivitiesResponse = await fetch(`/api/connectivities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(connectivities),
+      });
+
+      if (!connectivitiesResponse.ok) {
+        console.error('Failed to save connectivities:', connectivitiesResponse.status, connectivitiesResponse.statusText);
+      }
     } catch (error: any) {
       console.error('Error saving dropdown options:', error.message || error);
       throw error;
@@ -172,7 +278,7 @@ export default function AnalyticsPage() {
   // Function to save location relationships to API
   const saveLocationRelationships = async () => {
     try {
-      const response = await fetch(`/api/location-relationships?fiscalYear=${fiscalYear}`, {
+      const response = await fetch(`/api/location-relationships`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -181,7 +287,10 @@ export default function AnalyticsPage() {
       });
       
       if (!response.ok) {
-        console.error('Failed to save location relationships:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Failed to save location relationships:', response.status, response.statusText, errorText);
+        // Also log the data being sent for debugging
+        console.error('Data being sent:', locationRelationships);
       }
     } catch (error: any) {
       console.error('Error saving location relationships:', error.message || error);
@@ -252,92 +361,143 @@ export default function AnalyticsPage() {
         return;
     }
     
-    // Then save the individual option to the API
+    // Then save the individual option to the API using separate endpoints
     try {
-      const response = await fetch(`/api/dropdown-option`, {
+      let response;
+      let apiEndpoint;
+      
+      // Map optionType to the correct API endpoint (without fiscalYear parameter)
+      switch (optionType) {
+        case 'groups':
+          apiEndpoint = `/api/groups`;
+          break;
+        case 'ppaMerchants':
+          apiEndpoint = `/api/ppa-merchants`;
+          break;
+        case 'types':
+          apiEndpoint = `/api/types`;
+          break;
+        case 'locationCodes':
+          apiEndpoint = `/api/location-codes`;
+          break;
+        case 'locations':
+          apiEndpoint = `/api/locations`;
+          break;
+        case 'connectivities':
+          apiEndpoint = `/api/connectivities`;
+          break;
+        default:
+          throw new Error(`Invalid option type: ${optionType}`);
+      }
+      
+      // For the POST request, we need to get the current array and add the new value
+      // First, get the current options
+      const getCurrentOptions = () => {
+        switch (optionType) {
+          case 'groups': return groups;
+          case 'ppaMerchants': return ppaMerchants;
+          case 'types': return types;
+          case 'locationCodes': return locationCodes;
+          case 'locations': return locations;
+          case 'connectivities': return connectivities;
+          default: return [];
+        }
+      };
+      
+      const currentOptions = getCurrentOptions();
+      const updatedOptions = [...currentOptions, value];
+      
+      response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
-        'Content-Type': 'application/json',
-      },
-        body: JSON.stringify({
-          fiscalYear,
-          optionType,
-          optionValue: value
-        })
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedOptions)
       });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to save dropdown option');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save dropdown option');
+      }
+
+      const result = await response.json();
+      console.log(`Successfully added new ${optionType}: ${value}`, result);
+    } catch (error: any) {
+      console.error(`Failed to save ${optionType}: ${value}`, error);
+      
+      // Better error handling - check if error is an object and stringify it properly
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage = JSON.stringify(error);
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      alert(`Failed to save ${optionType}: ${errorMessage}`);
+      // Revert the local state change if save failed
+      switch (optionType) {
+        case 'groups':
+          setGroups(prev => prev.filter(item => item !== value));
+          break;
+        case 'ppaMerchants':
+          setPpaMerchants(prev => prev.filter(item => item !== value));
+          break;
+        case 'types':
+          setTypes(prev => prev.filter(item => item !== value));
+          break;
+        case 'locationCodes':
+          setLocationCodes(prev => prev.filter(item => item !== value));
+          break;
+        case 'locations':
+          setLocations(prev => prev.filter(item => item !== value));
+          break;
+        case 'connectivities':
+          setConnectivities(prev => prev.filter(item => item !== value));
+          break;
+      }
+    }
+  };
+
+  // Handle edit row
+  const handleEditRow = (row: TableRow) => {
+    if (!user) {
+      alert('You need to be authenticated to edit a row.');
+      return;
     }
 
-    const result = await response.json();
-    console.log(`Successfully added new ${optionType}: ${value}`, result);
-  } catch (error: any) {
-    console.error(`Failed to save ${optionType}: ${value}`, error);
-    alert(`Failed to save ${optionType}: ${error.message || 'Unknown error'}`);
-    // Revert the local state change if save failed
-    switch (optionType) {
-      case 'groups':
-        setGroups(prev => prev.filter(item => item !== value));
-        break;
-      case 'ppaMerchants':
-        setPpaMerchants(prev => prev.filter(item => item !== value));
-        break;
-      case 'types':
-        setTypes(prev => prev.filter(item => item !== value));
-        break;
-      case 'locationCodes':
-        setLocationCodes(prev => prev.filter(item => item !== value));
-        break;
-      case 'locations':
-        setLocations(prev => prev.filter(item => item !== value));
-        break;
-      case 'connectivities':
-        setConnectivities(prev => prev.filter(item => item !== value));
-        break;
+    setEditingId(row.id);
+    setEditRow({ ...row });
+    setOpenMenuId(null); // Close the menu when editing
+  };
+
+  // Handle delete row
+  const handleDeleteRow = async (id: number) => {
+    if (!user) {
+      alert('You need to be authenticated to delete a row.');
+      return;
     }
-  }
-};
 
-// Handle edit row
-const handleEditRow = (row: TableRow) => {
-  if (!user) {
-    alert('You need to be authenticated to edit a row.');
-    return;
-  }
+    // Confirm deletion with a dialog
+    const confirmed = window.confirm('Are you sure you want to delete this row? This action cannot be undone.');
+    if (!confirmed) {
+      setOpenMenuId(null); // Close the menu
+      return;
+    }
 
-  setEditingId(row.id);
-  setEditRow({ ...row });
-  setOpenMenuId(null); // Close the menu when editing
-};
-
-// Handle delete row
-const handleDeleteRow = async (id: number) => {
-  if (!user) {
-    alert('You need to be authenticated to delete a row.');
-    return;
-  }
-
-  // Confirm deletion with a dialog
-  const confirmed = window.confirm('Are you sure you want to delete this row? This action cannot be undone.');
-  if (!confirmed) {
     setOpenMenuId(null); // Close the menu
-    return;
-  }
 
-  setOpenMenuId(null); // Close the menu
+    // Update the data in state
+    const updatedData = tableData.filter(row => row.id !== id);
+    setTableData(updatedData);
 
-  // Update the data in state
-  const updatedData = tableData.filter(row => row.id !== id);
-  setTableData(updatedData);
-
-  // Save to database
-  // Only save to database if data has been loaded from the database
-  // This prevents saving empty data on initial load
-  if (dataLoaded) {
-    try {
-      const response = await fetch(`/api/table-data`, {
+    // Save to database
+    // Only save to database if data has been loaded from the database
+    // This prevents saving empty data on initial load
+    if (dataLoaded) {
+      try {
+        const response = await fetch(`/api/table-data`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -873,7 +1033,7 @@ const handleAddRow = async () => {
         <div className="lg:w-3/4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-foreground dark:text-white mb-4">Capacity by Type</h3>
+              <h3 className="text-lg font-medium text-foreground dark:text-white mb-4">Capacity by Type in MW</h3>
               <div className="h-64">
                 <Bar 
                   data={chartData.typeData} 
@@ -934,7 +1094,7 @@ const handleAddRow = async () => {
             </div>
             
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-foreground dark:text-white mb-4">Capacity by PPA/Merchant</h3>
+              <h3 className="text-lg font-medium text-foreground dark:text-white mb-4">Capacity by PPA/Merchant in MW</h3>
               <div className="h-64">
                 <Bar 
                   data={chartData.ppaMerchantData} 
@@ -1042,14 +1202,31 @@ const handleAddRow = async () => {
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={newRow.capacity || ''}
-                      onChange={(e) => setNewRow({...newRow, capacity: e.target.value ? parseFloat(e.target.value) : null})}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Enter capacity"
-                    />
+                   <input
+  type="number"
+  step="0.01"
+  value={newRow.capacity ?? ""}
+  onChange={(e) => {
+    let val = e.target.value;
+
+    // Allow empty input
+    if (val === "") {
+      setNewRow({ ...newRow, capacity: "" });
+      return;
+    }
+
+    // Prevent negative numbers
+    if (parseFloat(val) < 0) return;
+
+    // Allow only numbers with up to 2 decimal places
+    if (/^\d+(\.\d{0,2})?$/.test(val)) {
+      setNewRow({ ...newRow, capacity: val });
+    }
+  }}
+  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+  placeholder="Enter capacity"
+/>
+
                   </div>
                 </div>
                 
@@ -1140,20 +1317,40 @@ const handleAddRow = async () => {
                     Solar
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707a1 1 0 011.414 0z" clipRule="evenodd" />
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                       </svg>
                     </div>
                     <input
-                      type="number"
-                      step="0.01"
-                      value={newRow.solar || ''}
-                      onChange={(e) => setNewRow({...newRow, solar: e.target.value ? parseFloat(e.target.value) : null})}
-                      className={`w - full pl - 10 pr - 3 py - 2 border border - gray - 300 rounded - lg focus: ring - 2 focus: ring - blue - 500 focus: border - blue - 500 dark: bg - gray - 700 dark: border - gray - 600 dark: text - white ${ newRow.type === 'Wind' || newRow.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : '' } `}
-                      placeholder="Enter solar value"
-                      disabled={newRow.type === 'Wind' || newRow.type === 'Hybrid'}
-                    />
+  type="number"
+  step="0.01"
+  value={newRow.solar ?? ""}
+  onChange={(e) => {
+    let val = e.target.value;
+
+    // Allow empty value
+    if (val === "") {
+      setNewRow({ ...newRow, solar: "" });
+      return;
+    }
+
+    // Block negative values
+    if (parseFloat(val) < 0) return;
+
+    // Allow only 2 decimals
+    if (/^\d+(\.\d{0,2})?$/.test(val)) {
+      setNewRow({ ...newRow, solar: val });
+    }
+  }}
+  className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg
+              focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              dark:bg-gray-700 dark:border-gray-600 dark:text-white
+              ${ newRow.type === 'Wind' || newRow.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : '' } `}
+  placeholder="Enter solar value"
+  disabled={newRow.type === 'Wind' || newRow.type === 'Hybrid'}
+/>
+
                   </div>
                 </div>
                 
@@ -1167,15 +1364,35 @@ const handleAddRow = async () => {
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={newRow.wind || ''}
-                      onChange={(e) => setNewRow({...newRow, wind: e.target.value ? parseFloat(e.target.value) : null})}
-                      className={`w - full pl - 10 pr - 3 py - 2 border border - gray - 300 rounded - lg focus: ring - 2 focus: ring - blue - 500 focus: border - blue - 500 dark: bg - gray - 700 dark: border - gray - 600 dark: text - white ${ newRow.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : '' } `}
-                      placeholder="Enter wind value"
-                      disabled={newRow.type === 'Solar'}
-                    />
+                 <input
+  type="number"
+  step="0.01"
+  value={newRow.wind ?? ""}
+  onChange={(e) => {
+    let val = e.target.value;
+
+    // Allow clearing the field
+    if (val === "") {
+      setNewRow({ ...newRow, wind: "" });
+      return;
+    }
+
+    // Block negative values
+    if (parseFloat(val) < 0) return;
+
+    // Allow only numbers with up to 2 decimal places
+    if (/^\d+(\.\d{0,2})?$/.test(val)) {
+      setNewRow({ ...newRow, wind: val });
+    }
+  }}
+  className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg
+              focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+              dark:bg-gray-700 dark:border-gray-600 dark:text-white
+              ${ newRow.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : '' }`}
+  placeholder="Enter wind value"
+  disabled={newRow.type === 'Solar'}
+/>
+
                   </div>
                 </div>
                 
@@ -1227,11 +1444,6 @@ const handleAddRow = async () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location Code</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
                     <input
                       type="text"
                       value={newRow.locationCode}
@@ -1244,35 +1456,15 @@ const handleAddRow = async () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PSS</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      value={newRow.pss.replace('PSS - ', '')}
-                      onChange={(e) => setNewRow({...newRow, pss: `PSS - ${ e.target.value } `})}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Enter number"
-                    />
+                   <input
+  type="text"
+  value={newRow.pss}   // store ONLY the number/text
+  onChange={(e) => setNewRow({ ...newRow, pss: e.target.value })}
+  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+  placeholder="Enter number"
+/>
                   </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location Code</label>
-                  <SearchableDropdown
-                    options={locationCodes}
-                    value={newRow.locationCode}
-                    onChange={(value) => setNewRow({...newRow, locationCode: value})}
-                    onAddNew={(value) => {
-                      saveDropdownOption('locationCodes', value);
-                      setNewRow({...newRow, locationCode: value});
-                    }}
-                    placeholder="Select or type location code..."
-                  />
-                </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Connectivity</label>
                   <SearchableDropdown
