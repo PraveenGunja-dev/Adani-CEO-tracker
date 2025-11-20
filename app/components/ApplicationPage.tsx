@@ -246,17 +246,6 @@ const ApplicationPage = () => {
                 ))}
               </ul>
             </nav>
-            {/* Back to Home link in sidebar */}
-            <div className="mt-auto">
-              <Link href="/" className="text-blue-500 hover:underline flex items-center dark:text-blue-400">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9.707 14.707a1 1 0 010-1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                {!sidebarCollapsed && (
-                  <span className="ml-3">Back to Home</span>
-                )}
-              </Link>
-            </div>
           </div>
           
           {/* Collapse/Expand button at the bottom */}

@@ -76,67 +76,6 @@ export default function AnalyticsPage() {
   const [editRow, setEditRow] = useState<TableRow | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null); // Add this for 3-dot menu
 
-  // State for recent suggestions
-  const [recentSPVs, setRecentSPVs] = useState<string[]>([]);
-  const [recentPSSs, setRecentPSSs] = useState<string[]>([]);
-
-  // Load recent suggestions from localStorage on component mount
-  useEffect(() => {
-    const savedSPVs = localStorage.getItem('recentSPVs');
-    const savedPSSs = localStorage.getItem('recentPSSs');
-    
-    if (savedSPVs) {
-      try {
-        setRecentSPVs(JSON.parse(savedSPVs));
-      } catch (e) {
-        console.error('Error parsing recent SPVs:', e);
-      }
-    }
-    
-    if (savedPSSs) {
-      try {
-        setRecentPSSs(JSON.parse(savedPSSs));
-      } catch (e) {
-        console.error('Error parsing recent PSSs:', e);
-      }
-    }
-  }, []);
-
-  // Save recent suggestions to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem('recentSPVs', JSON.stringify(recentSPVs));
-  }, [recentSPVs]);
-
-  useEffect(() => {
-    localStorage.setItem('recentPSSs', JSON.stringify(recentPSSs));
-  }, [recentPSSs]);
-
-  // Function to add a value to recent suggestions
-  const addToRecentSuggestions = (type: 'spv' | 'pss', value: string) => {
-    if (!value) return;
-    
-    if (type === 'spv') {
-      setRecentSPVs(prev => {
-        const newRecent = [value, ...prev.filter(item => item !== value)].slice(0, 5); // Keep only last 5 unique values
-        return newRecent;
-      });
-    } else if (type === 'pss') {
-      setRecentPSSs(prev => {
-        const newRecent = [value, ...prev.filter(item => item !== value)].slice(0, 5); // Keep only last 5 unique values
-        return newRecent;
-      });
-    }
-  };
-
-  // Function to clear recent suggestions
-  const clearRecentSuggestions = (type: 'spv' | 'pss') => {
-    if (type === 'spv') {
-      setRecentSPVs([]);
-    } else if (type === 'pss') {
-      setRecentPSSs([]);
-    }
-  };
-
   // State for dropdown options
   const [groups, setGroups] = useState<string[]>([]);
   const [ppaMerchants, setPpaMerchants] = useState<string[]>([]);
@@ -780,14 +719,6 @@ const handleAddRow = async () => {
     return;
   }
 
-  // Add SPV and PSS values to recent suggestions
-  if (newRow.spv) {
-    addToRecentSuggestions('spv', newRow.spv);
-  }
-  if (newRow.pss) {
-    addToRecentSuggestions('pss', newRow.pss);
-  }
-
   // Create a new row with proper ID and S.No
   const nextId = tableData.length > 0 ? Math.max(...tableData.map(row => row.id)) + 1 : 1;
   const nextSno = tableData.length > 0 ? Math.max(...tableData.map(row => row.sno)) + 1 : 1;
@@ -999,19 +930,9 @@ const handleAddRow = async () => {
 
   const chartData = getChartData();
 
-  // Get filtered data
-  const filteredData = tableData.filter(row => 
-    (filters.group === '' || row.group === filters.group) &&
-    (filters.ppaMerchant === '' || row.ppaMerchant === filters.ppaMerchant) &&
-    (filters.type === '' || row.type === filters.type) &&
-    (filters.locationCode === '' || row.locationCode === filters.locationCode) &&
-    (filters.location === '' || row.location === filters.location) &&
-    (filters.connectivity === '' || row.connectivity === filters.connectivity)
-  );
-
-  // Calculate sums for numeric columns based on filtered data
+  // Calculate sums for numeric columns
   const calculateSums = () => {
-    return filteredData.reduce((acc, row) => {
+    return tableData.reduce((acc, row) => {
       acc.capacity += row.capacity || 0;
       acc.solar += row.solar || 0;
       acc.wind += row.wind || 0;
@@ -1288,16 +1209,16 @@ const handleAddRow = async () => {
   onChange={(e) => {
     let val = e.target.value;
 
-    // Allow empty value
+    // Allow empty input
     if (val === "") {
       setNewRow({ ...newRow, capacity: null });
       return;
     }
 
-    // Block negative values
+    // Prevent negative numbers
     if (parseFloat(val) < 0) return;
 
-    // Allow only 2 decimals
+    // Allow only numbers with up to 2 decimal places
     if (/^\d+(\.\d{0,2})?$/.test(val)) {
       setNewRow({ ...newRow, capacity: parseFloat(val) });
     }
@@ -1309,6 +1230,35 @@ const handleAddRow = async () => {
                   </div>
                 </div>
                 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Solar Capacity (kW)
+                  </label>
+                  <input
+                    type="text"
+                    value={newRow.solar ?? ""}
+                    onChange={(e) => {
+                      let val = e.target.value;
+
+                      // Allow empty value
+                      if (val === "") {
+                        setNewRow({ ...newRow, solar: null });
+                        return;
+                      }
+
+                      // Block negative values
+                      if (parseFloat(val) < 0) return;
+
+                      // Allow only 2 decimals
+                      if (/^\d+(\.\d{0,2})?$/.test(val)) {
+                        setNewRow({ ...newRow, solar: parseFloat(val) });
+                      }
+                    }}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    placeholder="Enter capacity"
+                  />
+
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Group
@@ -1410,7 +1360,7 @@ const handleAddRow = async () => {
 
     // Allow empty value
     if (val === "") {
-      setNewRow({ ...newRow, solar: null });
+      setNewRow({ ...newRow, solar: "" });
       return;
     }
 
@@ -1419,7 +1369,7 @@ const handleAddRow = async () => {
 
     // Allow only 2 decimals
     if (/^\d+(\.\d{0,2})?$/.test(val)) {
-      setNewRow({ ...newRow, solar: parseFloat(val) });
+      setNewRow({ ...newRow, solar: val });
     }
   }}
   className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg
@@ -1452,7 +1402,7 @@ const handleAddRow = async () => {
 
     // Allow clearing the field
     if (val === "") {
-      setNewRow({ ...newRow, wind: null });
+      setNewRow({ ...newRow, wind: "" });
       return;
     }
 
@@ -1461,7 +1411,7 @@ const handleAddRow = async () => {
 
     // Allow only numbers with up to 2 decimal places
     if (/^\d+(\.\d{0,2})?$/.test(val)) {
-      setNewRow({ ...newRow, wind: parseFloat(val) });
+      setNewRow({ ...newRow, wind: val });
     }
   }}
   className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg
@@ -1475,7 +1425,7 @@ const handleAddRow = async () => {
                   </div>
                 </div>
                 
-                <div className="relative">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SPV</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1492,33 +1442,6 @@ const handleAddRow = async () => {
                       style={{ textTransform: 'uppercase' }}
                     />
                   </div>
-                  {/* Recent SPV suggestions - filtered based on input, limited to 2 items */}
-                  {newRow.spv && recentSPVs.filter(spv => spv.toLowerCase().includes(newRow.spv.toLowerCase())).length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-gray-800 shadow-lg max-h-32 overflow-y-auto">
-                      <div className="py-1">
-                        {recentSPVs
-                          .filter(spv => spv.toLowerCase().includes(newRow.spv.toLowerCase()))
-                          .slice(0, 2)
-                          .map((spv, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              onClick={() => setNewRow({...newRow, spv})}
-                            >
-                              {spv}
-                            </button>
-                          ))}
-                        <button
-                          type="button"
-                          className="block w-full text-left px-4 py-2 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 mt-1"
-                          onClick={() => clearRecentSuggestions('spv')}
-                        >
-                          Clear recent SPVs
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
                 
                 <div>
@@ -1535,14 +1458,10 @@ const handleAddRow = async () => {
                       setNewRow({...newRow, location, locationCode});
                     }}
                     onAddNew={(value) => {
-                      // For new locations, set location code to the same value by default
+                      // For new locations, we'll let the user specify the location code
                       saveDropdownOption('locations', value);
-                      setNewRow({...newRow, location: value, locationCode: value});
-                      // Also add to location relationships
-                      const newRelationship = { location: value, locationCode: value };
-                      setLocationRelationships(prev => [...prev, newRelationship]);
-                      // Save location relationships to API
-                      saveLocationRelationships();
+                      setNewRow({...newRow, location: value});
+                      // Don't automatically set locationCode - let user enter it manually
                     }}
                     placeholder="Select or type location..."
                   />
@@ -1551,17 +1470,22 @@ const handleAddRow = async () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location Code</label>
                   <div className="relative">
-                    <input
-                      type="text"
+                    <SearchableDropdown
+                      options={locationCodes}
                       value={newRow.locationCode}
-                      readOnly
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-gray-100 dark:bg-gray-800"
-                      placeholder="Auto-filled from location selection"
+                      onChange={(value) => setNewRow({...newRow, locationCode: value})}
+                      onAddNew={(value) => {
+                        // Allow user to add new location code
+                        saveDropdownOption('locationCodes', value);
+                        setNewRow({...newRow, locationCode: value});
+                      }}
+                      placeholder="Select or type location code..."
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </div>
                 
-                <div className="relative">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PSS</label>
                   <div className="relative">
                    <input
@@ -1572,33 +1496,6 @@ const handleAddRow = async () => {
   placeholder="Enter number"
 />
                   </div>
-                  {/* Recent PSS suggestions - filtered based on input, limited to 2 items */}
-                  {newRow.pss && recentPSSs.filter(pss => pss.toLowerCase().includes(newRow.pss.toLowerCase())).length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-gray-800 shadow-lg max-h-32 overflow-y-auto">
-                      <div className="py-1">
-                        {recentPSSs
-                          .filter(pss => pss.toLowerCase().includes(newRow.pss.toLowerCase()))
-                          .slice(0, 2)
-                          .map((pss, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              onClick={() => setNewRow({...newRow, pss})}
-                            >
-                              {pss}
-                            </button>
-                          ))}
-                        <button
-                          type="button"
-                          className="block w-full text-left px-4 py-2 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 mt-1"
-                          onClick={() => clearRecentSuggestions('pss')}
-                        >
-                          Clear recent PSSs
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Connectivity</label>
@@ -1649,18 +1546,17 @@ const handleAddRow = async () => {
                     <div className="flex flex-col">
                       <span>Group</span>
                       <div className="mt-1">
-                        <select
+                        <SearchableDropdown
+                          options={['', ...groups]}
                           value={filters.group}
-                          onChange={(e) => handleFilterChange('group', e.target.value)}
-                          className="w-full text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1"
-                        >
-                          <option value="">All</option>
-                          {groups.map((group) => (
-                            <option key={group} value={group}>
-                              {group}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleFilterChange('group', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('groups', value);
+                            handleFilterChange('group', value);
+                          }}
+                          placeholder="All"
+                          className="w-full text-xs"
+                        />
                       </div>
                     </div>
                   </th>
@@ -1668,18 +1564,17 @@ const handleAddRow = async () => {
                     <div className="flex flex-col">
                       <span>PPA/Merchant</span>
                       <div className="mt-1">
-                        <select
+                        <SearchableDropdown
+                          options={['', ...ppaMerchants]}
                           value={filters.ppaMerchant}
-                          onChange={(e) => handleFilterChange('ppaMerchant', e.target.value)}
-                          className="w-full text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1"
-                        >
-                          <option value="">All</option>
-                          {ppaMerchants.map((ppaMerchant) => (
-                            <option key={ppaMerchant} value={ppaMerchant}>
-                              {ppaMerchant}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleFilterChange('ppaMerchant', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('ppaMerchants', value);
+                            handleFilterChange('ppaMerchant', value);
+                          }}
+                          placeholder="All"
+                          className="w-full text-xs"
+                        />
                       </div>
                     </div>
                   </th>
@@ -1687,18 +1582,17 @@ const handleAddRow = async () => {
                     <div className="flex flex-col">
                       <span>Type</span>
                       <div className="mt-1">
-                        <select
+                        <SearchableDropdown
+                          options={['', ...types]}
                           value={filters.type}
-                          onChange={(e) => handleFilterChange('type', e.target.value)}
-                          className="w-full text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1"
-                        >
-                          <option value="">All</option>
-                          {types.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleFilterChange('type', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('types', value);
+                            handleFilterChange('type', value);
+                          }}
+                          placeholder="All"
+                          className="w-full text-xs"
+                        />
                       </div>
                     </div>
                   </th>
@@ -1709,18 +1603,17 @@ const handleAddRow = async () => {
                     <div className="flex flex-col">
                       <span>Location Code</span>
                       <div className="mt-1">
-                        <select
+                        <SearchableDropdown
+                          options={['', ...locationCodes]}
                           value={filters.locationCode}
-                          onChange={(e) => handleFilterChange('locationCode', e.target.value)}
-                          className="w-full text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1"
-                        >
-                          <option value="">All</option>
-                          {locationCodes.map((locationCode) => (
-                            <option key={locationCode} value={locationCode}>
-                              {locationCode}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleFilterChange('locationCode', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('locationCodes', value);
+                            handleFilterChange('locationCode', value);
+                          }}
+                          placeholder="All"
+                          className="w-full text-xs"
+                        />
                       </div>
                     </div>
                   </th>
@@ -1728,18 +1621,22 @@ const handleAddRow = async () => {
                     <div className="flex flex-col">
                       <span>Location</span>
                       <div className="mt-1">
-                        <select
+                        <SearchableDropdown
+                          options={['', ...locations]}
                           value={filters.location}
-                          onChange={(e) => handleFilterChange('location', e.target.value)}
-                          className="w-full text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1"
-                        >
-                          <option value="">All</option>
-                          {locations.map((location) => (
-                            <option key={location} value={location}>
-                              {location}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleFilterChange('location', value)}
+                          onAddNew={(value) => {
+                            // Also add to location relationships with a default location code
+                            const newRelationship = { location: value, locationCode: value };
+                            setLocationRelationships(prev => [...prev, newRelationship]);
+                            saveDropdownOption('locations', value);
+                            handleFilterChange('location', value);
+                            // Save location relationships to API
+                            saveLocationRelationships();
+                          }}
+                          placeholder="All"
+                          className="w-full text-xs"
+                        />
                       </div>
                     </div>
                   </th>
@@ -1748,18 +1645,17 @@ const handleAddRow = async () => {
                     <div className="flex flex-col">
                       <span>Connectivity</span>
                       <div className="mt-1">
-                        <select
+                        <SearchableDropdown
+                          options={['', ...connectivities]}
                           value={filters.connectivity}
-                          onChange={(e) => handleFilterChange('connectivity', e.target.value)}
-                          className="w-full text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-2 py-1"
-                        >
-                          <option value="">All</option>
-                          {connectivities.map((connectivity) => (
-                            <option key={connectivity} value={connectivity}>
-                              {connectivity}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => handleFilterChange('connectivity', value)}
+                          onAddNew={(value) => {
+                            saveDropdownOption('connectivities', value);
+                            handleFilterChange('connectivity', value);
+                          }}
+                          placeholder="All"
+                          className="w-full text-xs"
+                        />
                       </div>
                     </div>
                   </th>
@@ -1769,7 +1665,16 @@ const handleAddRow = async () => {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredData.map((row, index) => (
+                {tableData
+                  .filter(row => 
+                    (filters.group === '' || row.group === filters.group) &&
+                    (filters.ppaMerchant === '' || row.ppaMerchant === filters.ppaMerchant) &&
+                    (filters.type === '' || row.type === filters.type) &&
+                    (filters.locationCode === '' || row.locationCode === filters.locationCode) &&
+                    (filters.location === '' || row.location === filters.location) &&
+                    (filters.connectivity === '' || row.connectivity === filters.connectivity)
+                  )
+                  .map((row, index) => (
                     <tr key={row.id || index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
                       {editingId === row.id ? (
                         // Edit mode row
@@ -1843,7 +1748,7 @@ const handleAddRow = async () => {
                               disabled={editRow?.type === 'Solar'}
                             />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white relative">
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                             <input
                               type="text"
                               value={editRow?.spv || ''}
@@ -1851,33 +1756,6 @@ const handleAddRow = async () => {
                               className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
                               style={{ textTransform: 'uppercase' }}
                             />
-                            {/* Recent SPV suggestions for edit row - filtered based on input, limited to 2 items */}
-                            {editRow?.spv && recentSPVs.filter(spv => spv.toLowerCase().includes(editRow.spv.toLowerCase())).length > 0 && (
-                              <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-gray-800 shadow-lg max-h-32 overflow-y-auto">
-                                <div className="py-1">
-                                  {recentSPVs
-                                    .filter(spv => spv.toLowerCase().includes(editRow.spv.toLowerCase()))
-                                    .slice(0, 2)
-                                    .map((spv, index) => (
-                                      <button
-                                        key={index}
-                                        type="button"
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                        onClick={() => handleEditInputChange('spv', spv)}
-                                      >
-                                        {spv}
-                                      </button>
-                                    ))}
-                                  <button
-                                    type="button"
-                                    className="block w-full text-left px-4 py-2 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 mt-1"
-                                    onClick={() => clearRecentSuggestions('spv')}
-                                  >
-                                    Clear recent SPVs
-                                  </button>
-                                </div>
-                              </div>
-                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                             <SearchableDropdown
@@ -1905,40 +1783,13 @@ const handleAddRow = async () => {
                               className="text-xs"
                             />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white relative">
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                             <input
                               type="text"
                               value={editRow?.pss?.replace('PSS - ', '') || ''}
                               onChange={(e) => handleEditInputChange('pss', `PSS - ${ e.target.value } `)}
                               className="w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs"
                             />
-                            {/* Recent PSS suggestions for edit row - filtered based on input, limited to 2 items */}
-                            {editRow?.pss && recentPSSs.filter(pss => pss.toLowerCase().includes(editRow.pss.replace('PSS - ', '').toLowerCase())).length > 0 && (
-                              <div className="absolute z-10 mt-1 w-full rounded-md bg-white dark:bg-gray-800 shadow-lg max-h-32 overflow-y-auto">
-                                <div className="py-1">
-                                  {recentPSSs
-                                    .filter(pss => pss.toLowerCase().includes(editRow.pss.replace('PSS - ', '').toLowerCase()))
-                                    .slice(0, 2)
-                                    .map((pss, index) => (
-                                      <button
-                                        key={index}
-                                        type="button"
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                        onClick={() => handleEditInputChange('pss', `PSS - ${ pss } `)}
-                                      >
-                                        {pss}
-                                      </button>
-                                    ))}
-                                  <button
-                                    type="button"
-                                    className="block w-full text-left px-4 py-2 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 mt-1"
-                                    onClick={() => clearRecentSuggestions('pss')}
-                                  >
-                                    Clear recent PSSs
-                                  </button>
-                                </div>
-                              </div>
-                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">
                             <SearchableDropdown
@@ -2036,7 +1887,14 @@ const handleAddRow = async () => {
                     </tr>
                   ))
                 }
-                {filteredData.length === 0 && (
+                {tableData.filter(row => 
+                  (filters.group === '' || row.group === filters.group) &&
+                  (filters.ppaMerchant === '' || row.ppaMerchant === filters.ppaMerchant) &&
+                  (filters.type === '' || row.type === filters.type) &&
+                  (filters.locationCode === '' || row.locationCode === filters.locationCode) &&
+                  (filters.location === '' || row.location === filters.location) &&
+                  (filters.connectivity === '' || row.connectivity === filters.connectivity)
+                ).length === 0 && (
                   <tr>
                     <td colSpan={13} className="px-6 py-4 text-center text-xs text-gray-500 dark:text-gray-400">
                       No data matches the current filters
@@ -2044,7 +1902,7 @@ const handleAddRow = async () => {
                   </tr>
                 )}
                 {/* Total row */}
-                {filteredData.length > 0 && (
+                {tableData.length > 0 && (
                   <tr className="bg-gray-100 dark:bg-gray-800 font-semibold">
                     <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">TOTAL</td>
                     <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-900 dark:text-white">{sums.capacity.toFixed(2)}</td>
