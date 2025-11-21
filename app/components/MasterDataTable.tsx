@@ -156,48 +156,7 @@ export default function MasterDataTable() {
         }
 
         // Load location relationships
-        const relResponse = await fetch(`/api/// ... existing code ...
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
-                  <SearchableDropdown
-                    options={locations}
-                    value={newRow.location}
-                    onChange={(value) => {
-                      const location = value;
-                      // Set location code based on location selection
-                      let locationCode = '';
-                      const relationship = locationRelationships.find(rel => rel.location === location);
-                      locationCode = relationship ? relationship.locationCode : '';
-                      setNewRow({...newRow, location, locationCode});
-                    }}
-                    onAddNew={(value) => {
-                      // For new locations, we'll let the user specify the location code
-                      saveDropdownOption('locations', value);
-                      setNewRow({...newRow, location: value});
-                      // Don't automatically set locationCode - let user enter it manually
-                    }}
-                    placeholder="Select or type location..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location Code</label>
-                  <div className="relative">
-                    <SearchableDropdown
-                      options={locationCodes}
-                      value={newRow.locationCode}
-                      onChange={(value) => setNewRow({...newRow, locationCode: value})}
-                      onAddNew={(value) => {
-                        // Allow user to add new location code
-                        saveDropdownOption('locationCodes', value);
-                        setNewRow({...newRow, locationCode: value});
-                      }}
-                      placeholder="Select or type location code..."
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </div>
-                </div>
-// ... existing code ...lationships`);
+        const relResponse = await fetch(`/api/location-relationships`);
         if (relResponse.ok) {
           const relationships = await relResponse.json();
           console.log('Loaded location relationships:', relationships); // Debug log
@@ -215,7 +174,7 @@ export default function MasterDataTable() {
     };
 
     loadMasterData();
-  }, [fiscalYear]);
+  }, []); // Removed fiscalYear dependency since dropdown options are loaded independently
 
   // Save dropdown options and location relationships to SQLite
   useEffect(() => {
@@ -322,7 +281,7 @@ export default function MasterDataTable() {
     if (!isInitialLoad) {
       saveMasterData();
     }
-  }, [dropdownOptions, locationRelationships, isInitialLoad, fiscalYear]);
+  }, [dropdownOptions, locationRelationships, isInitialLoad]);
 
   const handleAddOption = () => {
     if (!user) {

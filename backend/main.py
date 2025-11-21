@@ -1001,6 +1001,67 @@ def import_default_data():
     # I'll reuse the logic but filter the list.
     return import_data()
 
+# Add this new endpoint after the existing import endpoints
+@app.post("/import-data-from-frontend")
+def import_data_from_frontend(request: TableDataRequest):
+    """
+    Import data directly from frontend - useful for production environments
+    where local JSON files might not be available
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        fiscal_year = request.fiscalYear
+        # Convert TableRow objects to dictionaries if needed
+        data_dicts = []
+        for row in request.data:
+            if hasattr(row, 'dict'):
+                data_dicts.append(row.dict())
+            else:
+                data_dicts.append(row)
+       
+        data_json = json.dumps(data_dicts)
+       
+        # Check if there's already an active record for this fiscal year
+        cursor.execute('SELECT id, version FROM table_data WHERE fiscal_year = ? AND is_deleted = 0', (fiscal_year,))
+        existing_record = cursor.fetchone()
+       
+        if existing_record:
+            # Update existing active record
+            next_version = existing_record['version'] + 1
+            cursor.execute('''
+                UPDATE table_data
+                SET data = ?, version = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            ''', (data_json, next_version, existing_record['id']))
+        else:
+            # Get current max version for this fiscal year
+            cursor.execute('SELECT MAX(version) FROM table_data WHERE fiscal_year = ?', (fiscal_year,))
+            row = cursor.fetchone()
+            next_version = (row[0] if row[0] is not None else 0) + 1
+           
+            # Insert new active record
+            cursor.execute('''
+                INSERT INTO table_data (fiscal_year, data, version, is_deleted)
+                VALUES (?, ?, ?, 0)
+            ''', (fiscal_year, data_json, next_version))
+           
+        conn.commit()
+       
+        return {"message": "Table data imported successfully", "version": next_version, "count": len(data_dicts)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to import data: {str(e)}")
+    finally:
+        conn.close()
+
+# Additional route with /api prefix for direct access
+@app.post("/api/import-data-from-frontend")
+def api_import_data_from_frontend(request: TableDataRequest):
+    return import_data_from_frontend(request)
+
 # Additional route with /api prefix for direct access
 @app.post("/api/import-data")
 def api_import_data():

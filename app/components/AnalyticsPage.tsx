@@ -983,17 +983,28 @@ const handleAddRow = async () => {
       ],
     };
     
+    // Remove specific naming from group chart labels
+    const cleanGroupLabels = (labels: string[]) => {
+      return labels.map(label => {
+        // Remove 'AGEL', 'ACL' from group labels
+        return label.replace(/AGEL/gi, '').replace(/ACL/gi, '').trim() || label;
+      });
+    };
 
-    
+    // Apply clean labels to group chart data only
+    const cleanedGroupChartData = {
+      ...groupChartData,
+      labels: cleanGroupLabels(groupChartData.labels)
+    };
+
     return {
       capacity: Math.round(totalCapacity),
       solar: Math.round(totalSolar),
       wind: Math.round(totalWind),
       projects: projectCount,
       typeData: typeChartData,
-      groupData: groupChartData,
+      groupData: cleanedGroupChartData,
       ppaMerchantData: ppaMerchantChartData,
-
     };
   };
 
@@ -1112,7 +1123,7 @@ const handleAddRow = async () => {
         <div className="lg:w-3/4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-foreground dark:text-white mb-4">Capacity by Type in MW</h3>
+              <h3 className="text-lg font-medium text-center text-foreground dark:text-white mb-4">Capacity by Type in MW</h3>
               <div className="h-64">
                 <Bar 
                   data={chartData.typeData} 
@@ -1121,7 +1132,7 @@ const handleAddRow = async () => {
                     maintainAspectRatio: false,
                     plugins: {
                       legend: {
-                        position: 'top' as const,
+                        display: false,
                       },
                       title: {
                         display: false,
@@ -1152,7 +1163,7 @@ const handleAddRow = async () => {
             </div>
             
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-foreground dark:text-white mb-4">Projects by Group</h3>
+              <h3 className="text-lg text-center font-medium text-foreground dark:text-white mb-4">Projects by Group</h3>
               <div className="h-64">
                 <Pie 
                   data={chartData.groupData} 
@@ -1161,7 +1172,7 @@ const handleAddRow = async () => {
                     maintainAspectRatio: false,
                     plugins: {
                       legend: {
-                        position: 'top' as const,
+                        display: false,
                       },
                       title: {
                         display: false,
@@ -1173,7 +1184,7 @@ const handleAddRow = async () => {
             </div>
             
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-foreground dark:text-white mb-4">Capacity by PPA/Merchant in MW</h3>
+              <h3 className="text-lg text-center font-medium text-foreground dark:text-white mb-4">Capacity by PPA/Merchant in MW</h3>
               <div className="h-64">
                 <Bar 
                   data={chartData.ppaMerchantData} 
@@ -1182,7 +1193,7 @@ const handleAddRow = async () => {
                     maintainAspectRatio: false,
                     plugins: {
                       legend: {
-                        position: 'top' as const,
+                        display: false,
                       },
                       title: {
                         display: false,
@@ -1281,7 +1292,7 @@ const handleAddRow = async () => {
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                       </svg>
                     </div>
-                   <input
+                    <input
   type="number"
   step="0.01"
   value={newRow.capacity ?? ""}
@@ -1830,7 +1841,7 @@ const handleAddRow = async () => {
                               type="number"
                               value={editRow?.solar || ''}
                               onChange={(e) => handleEditInputChange('solar', e.target.value ? parseFloat(e.target.value) : null)}
-                              className={`w - full rounded - md bg - input - background dark: bg - [#171717] text - foreground dark: text - white border border - input - border dark: border - gray - 600 px - 2 py - 1 text - xs ${ editRow?.type === 'Wind' || editRow?.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : '' } `}
+                              className={`w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs ${ editRow?.type === 'Wind' || editRow?.type === 'Hybrid' ? 'opacity-50 cursor-not-allowed' : '' } `}
                               disabled={editRow?.type === 'Wind' || editRow?.type === 'Hybrid'}
                             />
                           </td>
@@ -1839,7 +1850,7 @@ const handleAddRow = async () => {
                               type="number"
                               value={editRow?.wind || ''}
                               onChange={(e) => handleEditInputChange('wind', e.target.value ? parseFloat(e.target.value) : null)}
-                              className={`w - full rounded - md bg - input - background dark: bg - [#171717] text - foreground dark: text - white border border - input - border dark: border - gray - 600 px - 2 py - 1 text - xs ${ editRow?.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : '' } `}
+                              className={`w-full rounded-md bg-input-background dark:bg-[#171717] text-foreground dark:text-white border border-input-border dark:border-gray-600 px-2 py-1 text-xs ${ editRow?.type === 'Solar' ? 'opacity-50 cursor-not-allowed' : '' } `}
                               disabled={editRow?.type === 'Solar'}
                             />
                           </td>

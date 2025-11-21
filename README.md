@@ -36,6 +36,20 @@ curl -X POST http://localhost:3000/api/import-default-data
 
 This will import data for all fiscal years (FY_23, FY_24, FY_25) from the JSON files in the components directory.
 
+### Production Database Population
+
+For production environments where the database is empty, you can populate it using one of these methods:
+
+1. **Using the API endpoint** (recommended for most cases):
+   ```bash
+   curl -X POST https://your-production-url.com/api/import-data
+   ```
+
+2. **Using the command-line script** (for direct server access):
+   ```bash
+   python populate_production_db.py
+   ```
+
 ## DataTable Component
 
 This project includes two implementations of the DataTable component:

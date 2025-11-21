@@ -1,9 +1,9 @@
 "use client";
-
+ 
 import { useState, useEffect } from 'react';
 import CustomDropdown from './CustomDropdown';
 import { API_BASE_URL } from '@/lib/config';
-
+ 
 // Define the structure for table rows
 interface TableRow {
   id: number;
@@ -20,13 +20,13 @@ interface TableRow {
   pss: string;
   connectivity: string;
 }
-
+ 
 // Define the props interface
 interface EnhancedDataTableProps {
   fiscalYear?: string;
   isAuthenticated?: boolean;
 }
-
+ 
 export default function EnhancedDataTable({
   fiscalYear = 'FY_25',
   isAuthenticated = true
@@ -37,7 +37,7 @@ export default function EnhancedDataTable({
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<TableRow | null>(null);
-
+ 
   // State for dropdown options
   const [groups, setGroups] = useState<string[]>(['AGEL', 'ACL']);
   const [ppaMerchants, setPpaMerchants] = useState<string[]>(['PPA', 'Merchant']);
@@ -45,7 +45,7 @@ export default function EnhancedDataTable({
   const [locationCodes, setLocationCodes] = useState<string[]>(['Khavda', 'RJ', 'Others']);
   const [locations, setLocations] = useState<string[]>(['Khavda', 'Baap', 'Essel', 'Kamuthi']);
   const [connectivities, setConnectivities] = useState<string[]>(['CTU', 'STU']);
-
+ 
   // State for filters
   const [filters, setFilters] = useState({
     group: '',
@@ -55,7 +55,7 @@ export default function EnhancedDataTable({
     location: '',
     connectivity: ''
   });
-
+ 
   // Load dropdown options
   useEffect(() => {
     const loadDropdownOptions = async () => {
@@ -74,19 +74,19 @@ export default function EnhancedDataTable({
         console.error('Error loading dropdown options:', err);
       }
     };
-
+ 
     loadDropdownOptions();
   }, [fiscalYear]);
-
+ 
   // Load data based on fiscal year
   useEffect(() => {
     const loadTableData = async () => {
       try {
         setLoading(true);
         setError(null);
-
+ 
         console.log('Loading data for fiscal year:', fiscalYear);
-
+ 
         // Try to load from database
         const response = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`, {
           cache: 'no-store',
@@ -94,13 +94,13 @@ export default function EnhancedDataTable({
             'Cache-Control': 'no-cache'
           }
         });
-
+ 
         console.log('API response status:', response.status);
-
+ 
         if (response.ok) {
           const result = await response.json();
           console.log('API response data:', result);
-
+ 
           // Use database data with correct field mapping
           const validatedData = result.data.map((row: any, index: number) => ({
             id: row.id || index + 1,
@@ -117,7 +117,7 @@ export default function EnhancedDataTable({
             pss: row.pss || '',
             connectivity: row.connectivity || ''
           }));
-
+ 
           console.log('Processed data:', validatedData);
           setData(validatedData);
           setFilteredData(validatedData);
@@ -138,15 +138,15 @@ export default function EnhancedDataTable({
         setLoading(false);
       }
     };
-
+ 
     loadTableData();
   }, [fiscalYear]);
-
+ 
   // Apply filters whenever data or filters change
   useEffect(() => {
     console.log('Applying filters:', filters);
     console.log('Data to filter:', data);
-
+ 
     const filtered = data.filter(row => {
       return (
         (filters.group === '' || row.group === filters.group) &&
@@ -157,11 +157,11 @@ export default function EnhancedDataTable({
         (filters.connectivity === '' || row.connectivity === filters.connectivity)
       );
     });
-
+ 
     console.log('Filtered data:', filtered);
     setFilteredData(filtered);
   }, [data, filters]);
-
+ 
   // Handle filter changes
   const handleFilterChange = (field: keyof typeof filters, value: string) => {
     console.log('Filter change:', field, value);
@@ -170,7 +170,7 @@ export default function EnhancedDataTable({
       [field]: value
     });
   };
-
+ 
   // Calculate sums for numeric columns
   const calculateSums = () => {
     return filteredData.reduce((acc, row) => {
@@ -180,48 +180,48 @@ export default function EnhancedDataTable({
       return acc;
     }, { capacity: 0, solar: 0, wind: 0 });
   };
-
+ 
   const sums = calculateSums();
-
+ 
   // Handle edit row
   const handleEditRow = (row: TableRow) => {
     if (!isAuthenticated) {
       alert('You need to be authenticated to edit a row.');
       return;
     }
-
+ 
     setEditingId(row.id);
     setEditRow({ ...row });
   };
-
+ 
   // Handle save edit
   const handleSaveEdit = async () => {
     if (!isAuthenticated) {
       alert('You need to be authenticated to save changes.');
       return;
     }
-
+ 
     if (!editRow) return;
-
+ 
     // Validate required fields
     if (!editRow.capacity || !editRow.group || !editRow.ppaMerchant || !editRow.type ||
       !editRow.location || !editRow.locationCode || !editRow.pss || !editRow.connectivity) {
       alert('Please fill in all required fields');
       return;
     }
-
+ 
     // For Hybrid type, ensure only wind value is used
     const validatedEditRow = {
       ...editRow,
       ...(editRow.type === 'Hybrid' && { solar: null })
     };
-
+ 
     // Update the data in state
     const updatedData = data.map(row => row.id === editRow.id ? validatedEditRow : row);
     setData(updatedData);
     setEditingId(null);
     setEditRow(null);
-
+ 
     // Save to database
     try {
       const response = await fetch(`/api/table-data`, {
@@ -232,7 +232,7 @@ export default function EnhancedDataTable({
         },
         body: JSON.stringify({ fiscalYear, data: updatedData }),
       });
-
+ 
       if (!response.ok) {
         console.error('Failed to save data to database:', response.status, response.statusText);
         alert('Failed to save changes to database');
@@ -242,29 +242,29 @@ export default function EnhancedDataTable({
       alert('Error saving changes to database');
     }
   };
-
+ 
   // Handle cancel edit
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditRow(null);
   };
-
+ 
   // Handle delete row
   const handleDeleteRow = async (id: number) => {
     if (!isAuthenticated) {
       alert('You need to be authenticated to delete a row.');
       return;
     }
-    
+   
     // Confirm deletion
     if (!window.confirm('Are you sure you want to delete this row?')) {
       return;
     }
-    
+   
     // Update the data in state
     const updatedData = data.filter(row => row.id !== id);
     setData(updatedData);
-    
+   
     // Save to database
     try {
       const response = await fetch(`/api/table-data`, {
@@ -275,7 +275,7 @@ export default function EnhancedDataTable({
       },
         body: JSON.stringify({ fiscalYear, data: updatedData }),
       });
-
+ 
     if (!response.ok) {
       console.error('Failed to save data to database:', response.status, response.statusText);
       alert('Failed to delete row from database');
@@ -290,8 +290,8 @@ export default function EnhancedDataTable({
     const originalData = await fetch(`/api/table-data?fiscalYear=${fiscalYear}`).then(res => res.json());
     setData(originalData.data);
   }
-};
-
+}
+ 
 // Handle input change for edit row
 const handleEditInputChange = (field: keyof TableRow, value: string | number | null) => {
   if (editRow) {
@@ -330,7 +330,7 @@ const handleEditInputChange = (field: keyof TableRow, value: string | number | n
     }
   }
 };
-
+ 
 if (loading) {
   return (
     <div className="flex justify-center items-center h-64">
@@ -339,7 +339,7 @@ if (loading) {
     </div>
   );
 }
-
+ 
 if (error) {
   return (
     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -348,7 +348,7 @@ if (error) {
     </div>
   );
 }
-
+ 
 return (
   <div className="mt-8 overflow-x-auto">
     <div className="inline-block min-w-full align-middle">
@@ -363,7 +363,7 @@ return (
             placeholder="All Groups"
           />
         </div>
-
+ 
         <div>
           <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">PPA/Merchant</label>
           <CustomDropdown
@@ -373,7 +373,7 @@ return (
             placeholder="All PPA/Merchant"
           />
         </div>
-
+ 
         <div>
           <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Type</label>
           <CustomDropdown
@@ -383,7 +383,7 @@ return (
             placeholder="All Types"
           />
         </div>
-
+ 
         <div>
           <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Location Code</label>
           <CustomDropdown
@@ -393,7 +393,7 @@ return (
             placeholder="All Location Codes"
           />
         </div>
-
+ 
         <div>
           <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Location</label>
           <CustomDropdown
@@ -403,7 +403,7 @@ return (
             placeholder="All Locations"
           />
         </div>
-
+ 
         <div>
           <label className="block text-sm font-medium text-foreground dark:text-foreground mb-1">Connectivity</label>
           <CustomDropdown
@@ -414,7 +414,7 @@ return (
           />
         </div>
       </div>
-
+ 
       {/* Data Summary */}
       <div className="mb-4 p-4 bg-muted dark:bg-muted rounded-lg">
         <p className="text-sm text-foreground dark:text-foreground">
@@ -424,7 +424,7 @@ return (
           Fiscal Year: <span className="font-semibold">{fiscalYear}</span>
         </p>
       </div>
-
+ 
       {/* Data Table */}
       <table className="min-w-full border-separate border-spacing-0">
         <thead>
@@ -654,7 +654,7 @@ return (
               )}
             </tr>
           ))}
-
+ 
           {/* Total row */}
           {filteredData.length > 0 && (
             <tr className="bg-table-header dark:bg-[#171717] font-semibold">
@@ -683,13 +683,14 @@ return (
           )}
         </tbody>
       </table>
-
+ 
       {filteredData.length === 0 && (
         <div className="text-center py-10">
           <p className="text-foreground dark:text-foreground">No data found matching the current filters.</p>
         </div>
-      )
+      )}
     </div>
   </div>
 );
 }
+ 

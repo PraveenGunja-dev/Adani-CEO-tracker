@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "jsxImportSource": "react",
     "target": "ES2017",
     "lib": [
       "dom",

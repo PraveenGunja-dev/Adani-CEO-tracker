@@ -62,8 +62,8 @@ export async function POST(request: Request) {
         continue;
       }
       
-      // Call FastAPI backend to import data
-      const response = await fetch(`${API_BASE_URL}/import-data`, {
+      // Call FastAPI backend to import data using the new endpoint
+      const response = await fetch(`${API_BASE_URL}/import-data-from-frontend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       const data = await response.json();
 
       if (response.ok) {
-        results.push(data);
+        results.push({ fiscalYear: fy.name, ...data });
       } else {
         results.push({
           fiscalYear: fy.name,
